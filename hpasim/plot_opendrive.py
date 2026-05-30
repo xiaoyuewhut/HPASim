@@ -11,6 +11,8 @@ import xml.etree.ElementTree as ET
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_MAP_DIR = PROJECT_ROOT / "maps" / "opendrive"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "outputs"
 os.environ.setdefault("MPLCONFIGDIR", str(PROJECT_ROOT / ".matplotlib"))
 
 
@@ -118,11 +120,19 @@ def _object_style(obj: ET.Element) -> tuple[str, str, float]:
 
 
 def plot_opendrive(path: Path, output: Path | None = None, show: bool = False) -> Path | None:
-    if not show:
-        import matplotlib
+    try:
+        if not show:
+            import matplotlib
 
-        matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+            matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ModuleNotFoundError as exc:
+        if exc.name == "matplotlib":
+            raise SystemExit(
+                "matplotlib is not installed in this Python environment. "
+                "Run with .\\.venv\\Scripts\\python.exe or install dependencies first."
+            ) from exc
+        raise
     from matplotlib.patches import Polygon
 
     tree = ET.parse(path)
@@ -172,13 +182,41 @@ def plot_opendrive(path: Path, output: Path | None = None, show: bool = False) -
     return output
 
 
+def plot_all_opendrive_maps(
+    map_dir: Path = DEFAULT_MAP_DIR,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    show: bool = False,
+) -> list[Path | None]:
+    paths = sorted(map_dir.glob("*.xodr"))
+    if not paths:
+        raise FileNotFoundError(f"No .xodr maps found in {map_dir}")
+    return [
+        plot_opendrive(path, output_dir / f"{path.stem}.png", show)
+        for path in paths
+    ]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Plot HPASim OpenDRIVE parking maps.")
-    parser.add_argument("xodr", type=Path, help="Path to an OpenDRIVE .xodr file.")
+    parser.add_argument(
+        "xodr",
+        type=Path,
+        nargs="?",
+        help="Path to an OpenDRIVE .xodr file. If omitted, all maps are rendered.",
+    )
     parser.add_argument("--output", "-o", type=Path, help="Output image path.")
     parser.add_argument("--show", action="store_true", help="Show an interactive matplotlib window.")
     args = parser.parse_args()
-    plot_opendrive(args.xodr, args.output, args.show)
+    if args.xodr is None:
+        for output in plot_all_opendrive_maps(show=args.show):
+            if output:
+                print(output)
+        return
+
+    output = args.output or DEFAULT_OUTPUT_DIR / f"{args.xodr.stem}.png"
+    rendered = plot_opendrive(args.xodr, output, args.show)
+    if rendered:
+        print(rendered)
 
 
 if __name__ == "__main__":
