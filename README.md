@@ -1,21 +1,41 @@
 # HPASim
 
-Memory parking simulation scaffolding with one generated OpenDRIVE parking lot
-map and matplotlib visualization support.
+[中文说明](README.zh-CN.md)
 
-## Generate Maps
+HPASim is a memory parking simulation scaffold. The current workspace focuses on
+one complete OpenDRIVE parking lot map and a matplotlib renderer for quick visual
+inspection.
+
+## Current Map
+
+The active scenario is `parking_lot_full`.
+
+- Target parking space: `central_upper_angled_row_10`
+- OpenDRIVE output: `maps/opendrive/parking_lot_full.xodr`
+- Preview output: `outputs/parking_lot_full.png`
+
+The map includes entry and exit drives, three longitudinal drive aisles, three
+cross aisles, dense perpendicular spaces, angled spaces, boundary-side parallel
+spaces, occupied vehicles, charging spaces, accessible spaces, reserved spaces,
+landscape islands, pedestrian crossings, speed bumps, and static obstacles.
+
+## Generate The Map
 
 ```powershell
-python scripts/generate_maps.py
+uv run python scripts/generate_maps.py
 ```
 
-The generated map is written to `maps/opendrive/parking_lot_full.xodr`.
-
-## Plot A Map
+## Render The Map
 
 ```powershell
 uv run python hpasim/plot_opendrive.py
 ```
 
-The initial scenario definitions are documented in
-`docs/parking_test_scenarios.md`.
+The renderer intentionally draws geometry only: no object labels, no title, and
+no axis text.
+
+## Key Files
+
+- `hpasim/parking_scenarios.py`: scenario definition and OpenDRIVE generation.
+- `hpasim/plot_opendrive.py`: matplotlib renderer.
+- `docs/parking_test_scenarios.md`: detailed map notes.
