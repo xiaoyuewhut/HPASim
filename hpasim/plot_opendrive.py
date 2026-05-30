@@ -7,12 +7,15 @@ from pathlib import Path
 import argparse
 import math
 import os
+import subprocess
+import sys
 import xml.etree.ElementTree as ET
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MAP_DIR = PROJECT_ROOT / "maps" / "opendrive"
 DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "outputs"
+VENV_PYTHON = PROJECT_ROOT / ".venv" / "Scripts" / "python.exe"
 os.environ.setdefault("MPLCONFIGDIR", str(PROJECT_ROOT / ".matplotlib"))
 
 
@@ -182,6 +185,16 @@ def plot_opendrive(path: Path, output: Path | None = None, show: bool = False) -
     return output
 
 
+def _restart_with_venv_python_if_needed() -> None:
+    try:
+        import matplotlib  # noqa: F401
+    except ModuleNotFoundError as exc:
+        if exc.name != "matplotlib" or not VENV_PYTHON.exists() or Path(sys.executable) == VENV_PYTHON:
+            return
+        completed = subprocess.run([str(VENV_PYTHON), *sys.argv])
+        raise SystemExit(completed.returncode) from exc
+
+
 def plot_all_opendrive_maps(
     map_dir: Path = DEFAULT_MAP_DIR,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
@@ -197,6 +210,8 @@ def plot_all_opendrive_maps(
 
 
 def main() -> None:
+    _restart_with_venv_python_if_needed()
+
     parser = argparse.ArgumentParser(description="Plot HPASim OpenDRIVE parking maps.")
     parser.add_argument(
         "xodr",
