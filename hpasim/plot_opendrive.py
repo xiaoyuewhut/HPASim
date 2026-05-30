@@ -37,6 +37,12 @@ class RoadFrame:
         )
 
 
+@dataclass(frozen=True)
+class RoadRender:
+    element: ET.Element
+    frame: RoadFrame
+
+
 def _float_attr(element: ET.Element, name: str, default: float = 0.0) -> float:
     value = element.get(name)
     return default if value is None else float(value)
@@ -90,7 +96,16 @@ def _draw_lane_band(ax: plt.Axes, frame: RoadFrame) -> None:
         frame.st_to_xy(frame.length, left_total),
         frame.st_to_xy(0.0, left_total),
     ]
-    ax.add_patch(Polygon(corners, closed=True, facecolor="#f2f3f0", edgecolor="#a1a198", linewidth=0.65))
+    ax.add_patch(
+        Polygon(
+            corners,
+            closed=True,
+            facecolor="#f2f3f0",
+            edgecolor="#a1a198",
+            linewidth=0.65,
+            zorder=1,
+        )
+    )
 
     lane_offsets = [0.0]
     running = 0.0
@@ -111,6 +126,7 @@ def _draw_lane_band(ax: plt.Axes, frame: RoadFrame) -> None:
             color="#c5c5bc",
             linewidth=0.55,
             linestyle="--" if t else "-",
+            zorder=2,
         )
 
 
@@ -141,6 +157,21 @@ def _object_style(obj: ET.Element) -> tuple[str, str, float]:
     if fill:
         return fill, "#4a4a46", 0.9
     return "#dddddd", "#4a4a46", 0.9
+
+
+def _object_zorder(obj: ET.Element) -> int:
+    obj_type = obj.get("type", "")
+    if obj_type == "crosswalk":
+        return 3
+    if obj_type == "parkingSpace":
+        return 4
+    if obj_type in {"island", "gate"}:
+        return 5
+    if obj_type == "vehicle":
+        return 6
+    if obj_type in {"barrier", "curbstone"}:
+        return 7
+    return 5
 
 
 def plot_opendrive(
@@ -177,21 +208,35 @@ def plot_opendrive(
 
     all_x: list[float] = []
     all_y: list[float] = []
-    for road in root.findall("road"):
-        frame = _road_frame(road)
+    roads = [RoadRender(road, _road_frame(road)) for road in root.findall("road")]
+
+    for road_render in roads:
+        frame = road_render.frame
         _draw_lane_band(ax, frame)
         for s, t in [(0.0, -sum(frame.lane_widths_right)), (frame.length, sum(frame.lane_widths_left))]:
             x, y = frame.st_to_xy(s, t)
             all_x.append(x)
             all_y.append(y)
 
-        for obj in road.findall("./objects/object"):
+    for road_render in roads:
+        frame = road_render.frame
+        for obj in road_render.element.findall("./objects/object"):
             corners = obj.findall("./outline/cornerLocal")
             if not corners:
                 continue
             points = [frame.st_to_xy(*_local_corner_to_st(obj, corner)) for corner in corners]
             face, edge, width = _object_style(obj)
-            ax.add_patch(Polygon(points, closed=True, facecolor=face, edgecolor=edge, linewidth=width, alpha=0.95))
+            ax.add_patch(
+                Polygon(
+                    points,
+                    closed=True,
+                    facecolor=face,
+                    edgecolor=edge,
+                    linewidth=width,
+                    alpha=0.95,
+                    zorder=_object_zorder(obj),
+                )
+            )
             all_x.extend(point[0] for point in points)
             all_y.extend(point[1] for point in points)
 
