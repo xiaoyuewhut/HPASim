@@ -207,6 +207,38 @@ def _parking_space(
     )
 
 
+def _parking_space_with_size(
+    object_id: int,
+    road_id: int,
+    name: str,
+    s: float,
+    t: float,
+    heading: float,
+    length: float,
+    width: float,
+    subtype: str | None = None,
+) -> BoxObject:
+    fill = {
+        "target": "#57c7ff",
+        "charging": "#9be7c8",
+        "accessible": "#b7d7ff",
+        "reserved": "#f4d35e",
+    }.get(subtype, "#e6e6e6")
+    return BoxObject(
+        object_id,
+        name,
+        "parkingSpace",
+        s,
+        t,
+        length,
+        width,
+        heading,
+        subtype=subtype,
+        fill=fill,
+        road_id=road_id,
+    )
+
+
 def _vehicle(
     object_id: int,
     road_id: int,
@@ -263,6 +295,71 @@ def _parking_bank(
     return tuple(objects)
 
 
+def _parallel_parking_bank(
+    start_id: int,
+    road_id: int,
+    prefix: str,
+    s_values: tuple[float, ...],
+    t: float,
+    occupied_slots: tuple[int, ...] = (),
+    reserved_slots: tuple[int, ...] = (),
+) -> tuple[BoxObject, ...]:
+    objects: list[BoxObject] = []
+    for index, s in enumerate(s_values, start=1):
+        subtype = "reserved" if index in reserved_slots else None
+        objects.append(
+            _parking_space_with_size(
+                start_id + index,
+                road_id,
+                f"{prefix}_{index:02d}",
+                s,
+                t,
+                0.0,
+                6.2,
+                2.35,
+                subtype,
+            )
+        )
+        if index in occupied_slots:
+            objects.append(
+                _vehicle(
+                    start_id + 500 + index,
+                    road_id,
+                    f"{prefix}_vehicle_{index:02d}",
+                    s,
+                    t,
+                    0.0,
+                    length=4.7,
+                    width=2.0,
+                )
+            )
+    return tuple(objects)
+
+
+def _angled_parking_bank(
+    start_id: int,
+    road_id: int,
+    prefix: str,
+    s_values: tuple[float, ...],
+    t: float,
+    heading: float,
+    target_slot: int | None = None,
+    occupied_slots: tuple[int, ...] = (),
+    charging_slots: tuple[int, ...] = (),
+) -> tuple[BoxObject, ...]:
+    objects: list[BoxObject] = []
+    for index, s in enumerate(s_values, start=1):
+        subtype = None
+        if index == target_slot:
+            subtype = "target"
+        elif index in charging_slots:
+            subtype = "charging"
+        objects.append(_parking_space(start_id + index, road_id, f"{prefix}_{index:02d}", s, t, heading, subtype))
+        if index in occupied_slots:
+            objects.append(_vehicle(start_id + 500 + index, road_id, f"{prefix}_vehicle_{index:02d}", s, t, heading))
+    return tuple(objects)
+
+
 def _crosswalk(
     start_id: int,
     road_id: int,
@@ -288,7 +385,56 @@ def _crosswalk(
 
 
 def _parking_lot_objects() -> tuple[BoxObject, ...]:
-    spaces = (12.0, 18.0, 24.0, 42.0, 48.0, 54.0, 66.0, 72.0, 78.0, 96.0, 102.0, 108.0)
+    perpendicular_spaces = (
+        9.5,
+        14.5,
+        19.5,
+        24.5,
+        39.5,
+        44.5,
+        49.5,
+        54.5,
+        65.5,
+        70.5,
+        75.5,
+        80.5,
+        95.5,
+        100.5,
+        105.5,
+        110.5,
+    )
+    angled_spaces = (
+        9.0,
+        14.0,
+        19.0,
+        24.0,
+        39.0,
+        44.0,
+        49.0,
+        54.0,
+        66.0,
+        71.0,
+        76.0,
+        81.0,
+        96.0,
+        101.0,
+        106.0,
+        111.0,
+    )
+    parallel_spaces = (
+        10.0,
+        17.0,
+        24.0,
+        40.0,
+        47.0,
+        54.0,
+        66.0,
+        73.0,
+        80.0,
+        96.0,
+        103.0,
+        110.0,
+    )
     objects: list[BoxObject] = [
         BoxObject(1001, "south_outer_wall", "barrier", 60.0, -14.0, 120.0, 0.28, fill="#3f3f3c", road_id=101),
         BoxObject(1002, "north_outer_wall", "barrier", 60.0, 62.0, 120.0, 0.28, fill="#3f3f3c", road_id=101),
@@ -305,12 +451,12 @@ def _parking_lot_objects() -> tuple[BoxObject, ...]:
         BoxObject(1013, "entry_speed_bump", "barrier", 36.0, 0.0, 7.2, 0.22, math.pi / 2, fill="#e6c85c", road_id=101),
         BoxObject(1014, "exit_speed_bump", "barrier", 84.0, 0.0, 7.2, 0.22, math.pi / 2, fill="#e6c85c", road_id=103),
     ]
-    objects.extend(_parking_bank(2000, 101, "south_wall_row", spaces, -7.8, -math.pi / 2, occupied_slots=(2, 6, 9), accessible_slots=(1,)))
-    objects.extend(_parking_bank(3000, 101, "south_inner_row", spaces, 7.8, math.pi / 2, occupied_slots=(3, 5, 10), reserved_slots=(12,)))
-    objects.extend(_parking_bank(4000, 102, "central_lower_row", spaces, -7.8, -math.pi / 2, occupied_slots=(1, 4, 8, 11)))
-    objects.extend(_parking_bank(5000, 102, "central_upper_row", spaces, 7.8, math.pi / 2, target_slot=7, occupied_slots=(2, 5, 9), charging_slots=(11, 12)))
-    objects.extend(_parking_bank(6000, 103, "north_inner_row", spaces, -7.8, -math.pi / 2, occupied_slots=(4, 7, 10), reserved_slots=(2,)))
-    objects.extend(_parking_bank(7000, 103, "north_wall_row", spaces, 7.8, math.pi / 2, occupied_slots=(3, 8, 12)))
+    objects.extend(_parallel_parking_bank(2000, 101, "south_parallel_row", parallel_spaces, -10.2, occupied_slots=(2, 5, 8), reserved_slots=(12,)))
+    objects.extend(_parking_bank(3000, 101, "south_perpendicular_row", perpendicular_spaces, 7.8, math.pi / 2, occupied_slots=(3, 6, 11, 15), accessible_slots=(1,)))
+    objects.extend(_angled_parking_bank(4000, 102, "central_lower_angled_row", angled_spaces, -7.2, math.radians(-60.0), occupied_slots=(2, 5, 8, 13)))
+    objects.extend(_angled_parking_bank(5000, 102, "central_upper_angled_row", angled_spaces, 7.2, math.radians(60.0), target_slot=10, occupied_slots=(3, 6, 12), charging_slots=(15, 16)))
+    objects.extend(_parking_bank(6000, 103, "north_perpendicular_row", perpendicular_spaces, -7.8, -math.pi / 2, occupied_slots=(4, 7, 10, 14), reserved_slots=(2,)))
+    objects.extend(_parallel_parking_bank(7000, 103, "north_parallel_row", parallel_spaces, 10.2, occupied_slots=(3, 7, 11)))
     objects.extend(_crosswalk(8000, 102, "west_crosswalk", 10.0, (-0.8, -0.4, 0.0, 0.4, 0.8)))
     objects.extend(_crosswalk(8010, 102, "east_crosswalk", 110.0, (-0.8, -0.4, 0.0, 0.4, 0.8)))
     return tuple(objects)
@@ -360,7 +506,7 @@ SCENARIOS: tuple[ScenarioSpec, ...] = (
             "one target parking bay."
         ),
         ego_start=(8.0, -1.7, 0.0),
-        target_parking_space="central_upper_row_07",
+        target_parking_space="central_upper_angled_row_10",
         roads=(
             RoadSpec(road_id=101, name="entry_drive", length=120.0, x=0.0, y=0.0, lane_width=3.4),
             RoadSpec(road_id=102, name="memory_drive", length=120.0, x=0.0, y=26.0, lane_width=3.4),
