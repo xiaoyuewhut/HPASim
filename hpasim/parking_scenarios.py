@@ -42,6 +42,7 @@ class BoxObject:
     heading: float = 0.0
     subtype: str | None = None
     fill: str | None = None
+    road_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -60,13 +61,7 @@ class ScenarioSpec:
 def _box_corners(length: float, width: float, heading: float) -> list[tuple[float, float]]:
     half_l = length / 2.0
     half_w = width / 2.0
-    local = [(-half_l, -half_w), (half_l, -half_w), (half_l, half_w), (-half_l, half_w)]
-    cos_h = math.cos(heading)
-    sin_h = math.sin(heading)
-    return [
-        (u * cos_h - v * sin_h, u * sin_h + v * cos_h)
-        for u, v in local
-    ]
+    return [(-half_l, -half_w), (half_l, -half_w), (half_l, half_w), (-half_l, half_w)]
 
 
 def _add_lane(parent: ET.Element, lane_id: int, lane_type: str, width: float) -> None:
@@ -122,6 +117,8 @@ def _add_road(root: ET.Element, road: RoadSpec, objects: Iterable[BoxObject]) ->
 
     objects_el = ET.SubElement(road_el, "objects")
     for obj in objects:
+        if obj.road_id is not None and obj.road_id != road.road_id:
+            continue
         obj_el = ET.SubElement(
             objects_el,
             "object",
@@ -141,6 +138,8 @@ def _add_road(root: ET.Element, road: RoadSpec, objects: Iterable[BoxObject]) ->
             obj_el.set("subtype", obj.subtype)
         if obj.fill:
             obj_el.set("fill", obj.fill)
+        if obj.road_id is not None:
+            obj_el.set("roadId", str(obj.road_id))
         if obj.object_type == "parkingSpace":
             ET.SubElement(obj_el, "parkingSpace", access="all")
         outline = ET.SubElement(obj_el, "outline")
@@ -200,6 +199,107 @@ def write_scenario(scenario: ScenarioSpec, output_dir: Path = DEFAULT_MAP_DIR) -
 
 def write_all_scenarios(output_dir: Path = DEFAULT_MAP_DIR) -> list[Path]:
     return [write_scenario(scenario, output_dir) for scenario in SCENARIOS]
+
+
+def _parking_row(
+    start_id: int,
+    road_id: int,
+    prefix: str,
+    s_values: tuple[float, ...],
+    t: float,
+    heading: float,
+    target_index: int | None = None,
+    occupied_indices: tuple[int, ...] = (),
+    reserved_indices: tuple[int, ...] = (),
+) -> tuple[BoxObject, ...]:
+    objects: list[BoxObject] = []
+    for index, s in enumerate(s_values):
+        is_target = index == target_index
+        is_reserved = index in reserved_indices
+        objects.append(
+            BoxObject(
+                start_id + index,
+                f"{prefix}_{index + 1:02d}",
+                "parkingSpace",
+                s,
+                t,
+                5.4,
+                2.6,
+                heading,
+                subtype="target" if is_target else "reserved" if is_reserved else None,
+                fill="#57c7ff" if is_target else "#f4d35e" if is_reserved else "#e6e6e6",
+                road_id=road_id,
+            )
+        )
+        if index in occupied_indices:
+            objects.append(
+                BoxObject(
+                    start_id + 10000 + index,
+                    f"{prefix}_occupied_vehicle_{index + 1:02d}",
+                    "vehicle",
+                    s,
+                    t,
+                    4.6,
+                    2.0,
+                    heading,
+                    fill="#8f8f8f",
+                    road_id=road_id,
+                )
+            )
+    return tuple(objects)
+
+
+def _crosswalk_stripes(
+    start_id: int,
+    road_id: int,
+    prefix: str,
+    s: float,
+    stripe_offsets: tuple[float, ...],
+) -> tuple[BoxObject, ...]:
+    return tuple(
+        BoxObject(
+            start_id + index,
+            f"{prefix}_stripe_{index + 1:02d}",
+            "crosswalk",
+            s + offset,
+            0.0,
+            7.2,
+            0.32,
+            math.pi / 2,
+            fill="#ffffff",
+            road_id=road_id,
+        )
+        for index, offset in enumerate(stripe_offsets)
+    )
+
+
+def _complex_parking_lot_objects() -> tuple[BoxObject, ...]:
+    bay_positions = tuple(float(s) for s in range(14, 86, 6))
+    objects: list[BoxObject] = [
+        BoxObject(9001, "south_boundary_wall", "barrier", 48.0, -30.0, 96.0, 0.28, fill="#555555", road_id=11),
+        BoxObject(9002, "north_boundary_wall", "barrier", 48.0, 30.0, 96.0, 0.28, fill="#555555", road_id=11),
+        BoxObject(9003, "west_boundary_wall", "barrier", 0.0, 0.0, 60.0, 0.28, math.pi / 2, fill="#555555", road_id=11),
+        BoxObject(9004, "east_boundary_wall", "barrier", 96.0, 0.0, 60.0, 0.28, math.pi / 2, fill="#555555", road_id=11),
+        BoxObject(9005, "entry_gate_opening", "gate", 9.0, -5.1, 8.0, 0.35, fill="#3a7ca5", road_id=10),
+        BoxObject(9006, "exit_gate_opening", "gate", 88.0, 5.1, 8.0, 0.35, fill="#3a7ca5", road_id=12),
+        BoxObject(9007, "central_landscape_island", "island", 48.0, 13.1, 13.5, 1.6, fill="#7fb069", road_id=11),
+        BoxObject(9008, "south_landscape_island", "island", 48.0, -13.1, 13.5, 1.6, fill="#7fb069", road_id=11),
+        BoxObject(9009, "charging_zone_marker", "parkingSpace", 82.0, 6.7, 5.4, 2.6, math.pi / 2, subtype="charging", fill="#9be7c8", road_id=11),
+        BoxObject(9010, "accessible_space_marker", "parkingSpace", 20.0, -6.7, 5.4, 3.2, -math.pi / 2, subtype="accessible", fill="#b7d7ff", road_id=11),
+        BoxObject(9011, "delivery_van_obstacle", "vehicle", 62.0, 0.0, 6.2, 2.35, fill="#777777", road_id=11),
+        BoxObject(9012, "maintenance_cone_cluster", "barrier", 67.0, -2.5, 2.4, 1.4, math.radians(20.0), fill="#ff9f1c", road_id=11),
+        BoxObject(9013, "speed_bump_south", "barrier", 30.0, 0.0, 7.2, 0.22, math.pi / 2, fill="#f4d35e", road_id=10),
+        BoxObject(9014, "speed_bump_north", "barrier", 70.0, 0.0, 7.2, 0.22, math.pi / 2, fill="#f4d35e", road_id=12),
+    ]
+    objects.extend(_parking_row(9100, 10, "south_outer_bay", bay_positions, -6.8, -math.pi / 2, occupied_indices=(1, 4, 8, 10)))
+    objects.extend(_parking_row(9200, 10, "south_inner_bay", bay_positions, 6.8, math.pi / 2, occupied_indices=(0, 3, 5, 9), reserved_indices=(11,)))
+    objects.extend(_parking_row(9300, 11, "central_north_bay", bay_positions, 6.8, math.pi / 2, target_index=6, occupied_indices=(2, 3, 8, 11)))
+    objects.extend(_parking_row(9400, 11, "central_south_bay", bay_positions, -6.8, -math.pi / 2, occupied_indices=(0, 5, 7, 10)))
+    objects.extend(_parking_row(9500, 12, "north_outer_bay", bay_positions, 6.8, math.pi / 2, occupied_indices=(1, 6, 9)))
+    objects.extend(_parking_row(9600, 12, "north_inner_bay", bay_positions, -6.8, -math.pi / 2, occupied_indices=(2, 4, 8), reserved_indices=(0,)))
+    objects.extend(_crosswalk_stripes(9700, 11, "west_pedestrian_crossing", 8.0, (-0.8, -0.4, 0.0, 0.4, 0.8)))
+    objects.extend(_crosswalk_stripes(9710, 11, "east_pedestrian_crossing", 88.0, (-0.8, -0.4, 0.0, 0.4, 0.8)))
+    return tuple(objects)
 
 
 SCENARIOS: tuple[ScenarioSpec, ...] = (
@@ -262,6 +362,26 @@ SCENARIOS: tuple[ScenarioSpec, ...] = (
             BoxObject(404, "back_wall", "barrier", 30.5, 8.85, 3.6, 0.25, fill="#555555"),
             BoxObject(405, "driveway_edge", "curbstone", 24.0, -3.15, 34.0, 0.2, fill="#444444"),
         ),
+    ),
+    ScenarioSpec(
+        key="complex_parking_lot",
+        name="Complex multi-aisle parking lot",
+        description=(
+            "Full parking lot with entry and exit drives, three longitudinal aisles, "
+            "three cross aisles, dense parking rows, occupied vehicles, pedestrian crossings, "
+            "islands, speed bumps, and a marked target memory-parking bay."
+        ),
+        ego_start=(8.0, -1.6, 0.0),
+        target_parking_space="central_north_bay_07",
+        roads=(
+            RoadSpec(road_id=10, name="south_entry_drive", length=96.0, x=0.0, y=0.0, lane_width=3.2),
+            RoadSpec(road_id=11, name="central_memory_drive", length=96.0, x=0.0, y=22.0, lane_width=3.2),
+            RoadSpec(road_id=12, name="north_exit_drive", length=96.0, x=0.0, y=44.0, lane_width=3.2),
+            RoadSpec(road_id=13, name="west_cross_aisle", length=52.0, x=18.0, y=-4.0, heading=math.pi / 2, lane_width=3.0),
+            RoadSpec(road_id=14, name="middle_cross_aisle", length=52.0, x=48.0, y=-4.0, heading=math.pi / 2, lane_width=3.0),
+            RoadSpec(road_id=15, name="east_cross_aisle", length=52.0, x=78.0, y=-4.0, heading=math.pi / 2, lane_width=3.0),
+        ),
+        objects=_complex_parking_lot_objects(),
     ),
 )
 

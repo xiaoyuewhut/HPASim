@@ -36,44 +36,44 @@
       <object id="301" name="target_angled_01" type="parkingSpace" s="31.000000" t="6.400000" zOffset="0.0" validLength="0.0" orientation="none" length="5.300000" width="2.600000" hdg="1.047198" subtype="target" fill="#57c7ff">
         <parkingSpace access="all" />
         <outline>
-          <cornerLocal id="0" u="-0.199167" v="-2.944967" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="2.450833" v="1.644967" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="0.199167" v="2.944967" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-2.450833" v="-1.644967" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-2.650000" v="-1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="2.650000" v="-1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="2.650000" v="1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-2.650000" v="1.300000" z="0.0" height="0.0" />
         </outline>
       </object>
       <object id="302" name="angled_left_space" type="parkingSpace" s="27.900000" t="5.900000" zOffset="0.0" validLength="0.0" orientation="none" length="5.300000" width="2.600000" hdg="1.047198" fill="#e6e6e6">
         <parkingSpace access="all" />
         <outline>
-          <cornerLocal id="0" u="-0.199167" v="-2.944967" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="2.450833" v="1.644967" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="0.199167" v="2.944967" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-2.450833" v="-1.644967" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-2.650000" v="-1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="2.650000" v="-1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="2.650000" v="1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-2.650000" v="1.300000" z="0.0" height="0.0" />
         </outline>
       </object>
       <object id="303" name="angled_right_space" type="parkingSpace" s="34.100000" t="6.900000" zOffset="0.0" validLength="0.0" orientation="none" length="5.300000" width="2.600000" hdg="1.047198" fill="#e6e6e6">
         <parkingSpace access="all" />
         <outline>
-          <cornerLocal id="0" u="-0.199167" v="-2.944967" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="2.450833" v="1.644967" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="0.199167" v="2.944967" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-2.450833" v="-1.644967" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-2.650000" v="-1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="2.650000" v="-1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="2.650000" v="1.300000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-2.650000" v="1.300000" z="0.0" height="0.0" />
         </outline>
       </object>
       <object id="304" name="angled_occupied_vehicle" type="vehicle" s="27.900000" t="5.900000" zOffset="0.0" validLength="0.0" orientation="none" length="4.500000" width="2.000000" hdg="1.047198" fill="#8f8f8f">
         <outline>
-          <cornerLocal id="0" u="-0.258975" v="-2.448557" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="1.991025" v="1.448557" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="0.258975" v="2.448557" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-1.991025" v="-1.448557" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-2.250000" v="-1.000000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="2.250000" v="-1.000000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="2.250000" v="1.000000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-2.250000" v="1.000000" z="0.0" height="0.0" />
         </outline>
       </object>
       <object id="305" name="exit_side_barrier" type="barrier" s="40.000000" t="4.000000" zOffset="0.0" validLength="0.0" orientation="none" length="8.000000" width="0.250000" hdg="1.047198" fill="#555555">
         <outline>
-          <cornerLocal id="0" u="-1.891747" v="-3.526602" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="2.108253" v="3.401602" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="1.891747" v="3.526602" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-2.108253" v="-3.401602" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-4.000000" v="-0.125000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="4.000000" v="-0.125000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="4.000000" v="0.125000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-4.000000" v="0.125000" z="0.0" height="0.0" />
         </outline>
       </object>
     </objects>
