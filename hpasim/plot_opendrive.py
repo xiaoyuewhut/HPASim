@@ -90,7 +90,7 @@ def _draw_lane_band(ax: plt.Axes, frame: RoadFrame) -> None:
         frame.st_to_xy(frame.length, left_total),
         frame.st_to_xy(0.0, left_total),
     ]
-    ax.add_patch(Polygon(corners, closed=True, facecolor="#f6f6f6", edgecolor="#222222", linewidth=1.0))
+    ax.add_patch(Polygon(corners, closed=True, facecolor="#f2f3f0", edgecolor="#a1a198", linewidth=0.65))
 
     lane_offsets = [0.0]
     running = 0.0
@@ -105,21 +105,42 @@ def _draw_lane_band(ax: plt.Axes, frame: RoadFrame) -> None:
     for t in lane_offsets:
         start = frame.st_to_xy(0.0, t)
         end = frame.st_to_xy(frame.length, t)
-        ax.plot([start[0], end[0]], [start[1], end[1]], color="#777777", linewidth=0.8, linestyle="--" if t else "-")
+        ax.plot(
+            [start[0], end[0]],
+            [start[1], end[1]],
+            color="#c5c5bc",
+            linewidth=0.55,
+            linestyle="--" if t else "-",
+        )
 
 
 def _object_style(obj: ET.Element) -> tuple[str, str, float]:
     obj_type = obj.get("type", "")
+    subtype = obj.get("subtype", "")
     fill = obj.get("fill")
-    if fill:
-        return fill, "#222222", 1.0
+    if subtype == "target":
+        return "#4fb3ff", "#0969a8", 1.5
+    if subtype == "charging":
+        return "#9fe3c2", "#3a8b66", 1.0
+    if subtype == "accessible":
+        return "#b9d6ff", "#5686c6", 1.0
+    if subtype == "reserved":
+        return "#efd66f", "#947b20", 1.0
+    if obj_type == "gate":
+        return fill or "#2f80a7", "#204b61", 1.2
+    if obj_type == "island":
+        return fill or "#8dbb75", "#547744", 1.1
+    if obj_type == "crosswalk":
+        return "#ffffff", "#d4d4cc", 0.4
     if obj_type == "parkingSpace":
-        return "#e6e6e6", "#268bd2", 1.2
+        return "#fafaf7", "#8e8e86", 0.85
     if obj_type == "vehicle":
-        return "#8f8f8f", "#333333", 1.0
+        return fill or "#7a7a74", "#3d3d3a", 1.0
     if obj_type in {"barrier", "curbstone"}:
-        return "#555555", "#222222", 1.0
-    return "#dddddd", "#333333", 1.0
+        return fill or "#555555", "#3a3a36", 1.0
+    if fill:
+        return fill, "#4a4a46", 0.9
+    return "#dddddd", "#4a4a46", 0.9
 
 
 def plot_opendrive(
@@ -144,12 +165,15 @@ def plot_opendrive(
 
     tree = ET.parse(path)
     root = tree.getroot()
-    header = root.find("header")
 
-    fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+    fig, ax = plt.subplots(figsize=(12, 8), constrained_layout=True)
+    fig.patch.set_facecolor("#f7f7f3")
+    ax.set_facecolor("#f7f7f3")
     ax.set_aspect("equal", adjustable="box")
-    ax.grid(True, color="#dddddd", linewidth=0.6)
-    ax.tick_params(labelbottom=False, labelleft=False)
+    ax.grid(False)
+    ax.tick_params(left=False, bottom=False, labelbottom=False, labelleft=False)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
 
     all_x: list[float] = []
     all_y: list[float] = []
@@ -167,12 +191,12 @@ def plot_opendrive(
                 continue
             points = [frame.st_to_xy(*_local_corner_to_st(obj, corner)) for corner in corners]
             face, edge, width = _object_style(obj)
-            ax.add_patch(Polygon(points, closed=True, facecolor=face, edgecolor=edge, linewidth=width, alpha=0.88))
+            ax.add_patch(Polygon(points, closed=True, facecolor=face, edgecolor=edge, linewidth=width, alpha=0.95))
             all_x.extend(point[0] for point in points)
             all_y.extend(point[1] for point in points)
 
     if all_x and all_y:
-        margin = 4.0
+        margin = 5.0
         ax.set_xlim(min(all_x) - margin, max(all_x) + margin)
         ax.set_ylim(min(all_y) - margin, max(all_y) + margin)
 
