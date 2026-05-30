@@ -122,40 +122,10 @@ def _object_style(obj: ET.Element) -> tuple[str, str, float]:
     return "#dddddd", "#333333", 1.0
 
 
-def _should_label(obj: ET.Element, label_mode: str) -> bool:
-    if label_mode == "none":
-        return False
-    if label_mode == "all":
-        return True
-
-    name = obj.get("name", "")
-    obj_type = obj.get("type", "")
-    subtype = obj.get("subtype", "")
-    if subtype in {"target", "charging", "accessible"}:
-        return True
-    if obj_type in {"gate", "island"}:
-        return True
-    if obj_type == "vehicle" and "obstacle" in name:
-        return True
-    if obj_type == "barrier" and any(token in name for token in ("speed_bump", "cone")):
-        return True
-    return False
-
-
-def _label_text(obj: ET.Element) -> str:
-    subtype = obj.get("subtype")
-    if subtype == "target":
-        return "TARGET"
-    if subtype:
-        return subtype
-    return obj.get("name", "")
-
-
 def plot_opendrive(
     path: Path,
     output: Path | None = None,
     show: bool = False,
-    label_mode: str = "key",
 ) -> Path | None:
     try:
         if not show:
@@ -178,10 +148,8 @@ def plot_opendrive(
 
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     ax.set_aspect("equal", adjustable="box")
-    ax.set_title(header.get("name") if header is not None else path.stem)
-    ax.set_xlabel("x [m]")
-    ax.set_ylabel("y [m]")
     ax.grid(True, color="#dddddd", linewidth=0.6)
+    ax.tick_params(labelbottom=False, labelleft=False)
 
     all_x: list[float] = []
     all_y: list[float] = []
@@ -200,17 +168,6 @@ def plot_opendrive(
             points = [frame.st_to_xy(*_local_corner_to_st(obj, corner)) for corner in corners]
             face, edge, width = _object_style(obj)
             ax.add_patch(Polygon(points, closed=True, facecolor=face, edgecolor=edge, linewidth=width, alpha=0.88))
-            if _should_label(obj, label_mode):
-                center = frame.st_to_xy(_float_attr(obj, "s"), _float_attr(obj, "t"))
-                ax.text(
-                    center[0],
-                    center[1],
-                    _label_text(obj),
-                    fontsize=7,
-                    fontweight="bold" if obj.get("subtype") == "target" else "normal",
-                    ha="center",
-                    va="center",
-                )
             all_x.extend(point[0] for point in points)
             all_y.extend(point[1] for point in points)
 
@@ -242,13 +199,12 @@ def plot_all_opendrive_maps(
     map_dir: Path = DEFAULT_MAP_DIR,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     show: bool = False,
-    label_mode: str = "key",
 ) -> list[Path | None]:
     paths = sorted(map_dir.glob("*.xodr"))
     if not paths:
         raise FileNotFoundError(f"No .xodr maps found in {map_dir}")
     return [
-        plot_opendrive(path, output_dir / f"{path.stem}.png", show, label_mode)
+        plot_opendrive(path, output_dir / f"{path.stem}.png", show)
         for path in paths
     ]
 
@@ -265,21 +221,15 @@ def main() -> None:
     )
     parser.add_argument("--output", "-o", type=Path, help="Output image path.")
     parser.add_argument("--show", action="store_true", help="Show an interactive matplotlib window.")
-    parser.add_argument(
-        "--labels",
-        choices=("key", "all", "none"),
-        default="key",
-        help="Object labels to draw. Defaults to key labels only.",
-    )
     args = parser.parse_args()
     if args.xodr is None:
-        for output in plot_all_opendrive_maps(show=args.show, label_mode=args.labels):
+        for output in plot_all_opendrive_maps(show=args.show):
             if output:
                 print(output)
         return
 
     output = args.output or DEFAULT_OUTPUT_DIR / f"{args.xodr.stem}.png"
-    rendered = plot_opendrive(args.xodr, output, args.show, args.labels)
+    rendered = plot_opendrive(args.xodr, output, args.show)
     if rendered:
         print(rendered)
 
