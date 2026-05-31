@@ -35,8 +35,20 @@ uv run python hpasim/plot_opendrive.py
 The renderer intentionally draws geometry only: no object labels, no title, and
 no axis text.
 
+## Vehicle Model
+
+The vehicle model is a front-steering kinematic bicycle model with state
+`x, y, yaw, v` and control input `steer, acceleration`.
+
+Run the tests:
+
+```powershell
+uv run python -m unittest discover -s tests
+```
+
 ## Key Files
 
 - `hpasim/parking_scenarios.py`: scenario definition and OpenDRIVE generation.
 - `hpasim/plot_opendrive.py`: matplotlib renderer.
+- `hpasim/vehicle.py`: front-steering kinematic vehicle model.
 - `docs/parking_test_scenarios.md`: detailed map notes.

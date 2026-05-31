@@ -31,8 +31,20 @@ uv run python hpasim/plot_opendrive.py
 
 渲染器只绘制几何图形：不显示对象文字标签，不显示标题，也不显示坐标轴文字。
 
+## 车辆模型
+
+车辆模型采用前轮转向运动学自行车模型，状态为 `x, y, yaw, v`，控制量为
+`steer, acceleration`。
+
+运行测试：
+
+```powershell
+uv run python -m unittest discover -s tests
+```
+
 ## 关键文件
 
 - `hpasim/parking_scenarios.py`：场景定义和 OpenDRIVE 生成逻辑。
 - `hpasim/plot_opendrive.py`：matplotlib 渲染器。
+- `hpasim/vehicle.py`：前轮转向车辆运动学模型。
 - `docs/parking_test_scenarios.md`：地图细节说明。
