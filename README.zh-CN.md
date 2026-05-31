@@ -66,6 +66,21 @@ uv run python scripts/plan_route.py
 
 相关代码位于 `hpasim/planner.py` 和 `hpasim/map_payload.py`。
 
+## 轨迹规划和控制
+
+轨迹规划器会把路线分段重采样成可跟踪参考轨迹，生成 `x, y, yaw, v, gear, t, s`
+等字段；控制器使用离散 LQR 跟踪参考轨迹，并输出前轮转角和加速度。
+
+```powershell
+uv run python scripts/simulate_lqr_tracking.py
+```
+
+当前 LQR 示例分别验证前进段和倒车段的跟踪能力。完整端到端泊车闭环还需要在泊车
+机动规划阶段生成运动学可行的换挡姿态，后续适合引入 Hybrid A* 或 Reeds-Shepp
+路径作为泊车段规划器。
+
+相关代码位于 `hpasim/trajectory.py` 和 `hpasim/control.py`。
+
 ## 测试
 
 ```powershell
@@ -79,6 +94,9 @@ uv run python -m unittest discover -s tests
 - `hpasim/vehicle.py`：前轮转向车辆运动学模型。
 - `hpasim/planner.py`：基于 OpenDRIVE 地图的栅格路线规划器。
 - `hpasim/map_payload.py`：供交互式可视化使用的 JSON 地图数据。
+- `hpasim/trajectory.py`：参考轨迹生成器。
+- `hpasim/control.py`：LQR 轨迹跟踪控制器。
 - `scripts/serve_viewer.py`：Canvas 可视化工具的本地 HTTP 服务。
+- `scripts/simulate_lqr_tracking.py`：LQR 闭环跟踪示例。
 - `viewer/index.html`：交互式 Canvas 可视化页面。
 - `docs/parking_test_scenarios.md`：停车场测试场景说明。

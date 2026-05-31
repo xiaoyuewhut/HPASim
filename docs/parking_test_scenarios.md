@@ -22,6 +22,8 @@ HPASim 当前使用一张完整的 OpenDRIVE 停车场地图：
 - matplotlib 渲染器只绘制几何图形，不在地图上绘制文字标签。
 - 交互式可视化工具使用 Canvas 绘制地图，点击车位后调用路线规划接口并显示路径。
 - 路线规划阶段会偏好右侧车道中心，减少贴边行驶；目标为车位时会生成前进段和倒车入库段。
+- 轨迹规划阶段会把路线重采样成带时间、速度、朝向和档位的参考轨迹，控制阶段使用 LQR 输出前轮转角和加速度。
+- 当前 LQR 示例分别验证前进段和倒车段跟踪；完整泊车闭环仍需要 Hybrid A* 或 Reeds-Shepp 这类运动学可行泊车机动规划。
 
 ## 常用命令
 
@@ -47,4 +49,10 @@ uv run python scripts/serve_viewer.py
 
 ```powershell
 uv run python -m unittest discover -s tests
+```
+
+运行 LQR 闭环跟踪示例：
+
+```powershell
+uv run python scripts/simulate_lqr_tracking.py
 ```
