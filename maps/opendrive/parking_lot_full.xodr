@@ -65,7 +65,7 @@
           <cornerLocal id="3" u="-38.000000" v="0.140000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="1005" name="entry_gate" type="gate" s="10.000000" t="-11.000000" zOffset="0.0" validLength="0.0" orientation="none" length="12.000000" width="0.420000" hdg="0.000000" fill="#2f80a7" roadId="101">
+      <object id="1005" name="entry_barrier_gate" type="gate" s="11.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="12.000000" width="0.420000" hdg="0.000000" fill="#2f80a7" roadId="101">
         <outline>
           <cornerLocal id="0" u="-6.000000" v="-0.210000" z="0.0" height="0.0" />
           <cornerLocal id="1" u="6.000000" v="-0.210000" z="0.0" height="0.0" />
@@ -73,12 +73,28 @@
           <cornerLocal id="3" u="-6.000000" v="0.210000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="1006" name="exit_gate" type="gate" s="110.000000" t="59.000000" zOffset="0.0" validLength="0.0" orientation="none" length="12.000000" width="0.420000" hdg="0.000000" fill="#2f80a7" roadId="101">
+      <object id="1006" name="exit_barrier_gate" type="gate" s="109.000000" t="60.400000" zOffset="0.0" validLength="0.0" orientation="none" length="12.000000" width="0.420000" hdg="0.000000" fill="#2f80a7" roadId="101">
         <outline>
           <cornerLocal id="0" u="-6.000000" v="-0.210000" z="0.0" height="0.0" />
           <cornerLocal id="1" u="6.000000" v="-0.210000" z="0.0" height="0.0" />
           <cornerLocal id="2" u="6.000000" v="0.210000" z="0.0" height="0.0" />
           <cornerLocal id="3" u="-6.000000" v="0.210000" z="0.0" height="0.0" />
+        </outline>
+      </object>
+      <object id="1007" name="entry_ramp" type="ramp" s="15.000000" t="-12.100000" zOffset="0.0" validLength="0.0" orientation="none" length="18.000000" width="2.200000" hdg="0.000000" fill="#dedbd1" roadId="101">
+        <outline>
+          <cornerLocal id="0" u="-9.000000" v="-1.100000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="9.000000" v="-1.100000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="9.000000" v="1.100000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-9.000000" v="1.100000" z="0.0" height="0.0" />
+        </outline>
+      </object>
+      <object id="1008" name="exit_ramp" type="ramp" s="105.000000" t="61.100000" zOffset="0.0" validLength="0.0" orientation="none" length="18.000000" width="2.200000" hdg="0.000000" fill="#dedbd1" roadId="101">
+        <outline>
+          <cornerLocal id="0" u="-9.000000" v="-1.100000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="9.000000" v="-1.100000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="9.000000" v="1.100000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-9.000000" v="1.100000" z="0.0" height="0.0" />
         </outline>
       </object>
       <object id="1013" name="entry_speed_bump" type="barrier" s="36.000000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.200000" width="0.220000" hdg="1.570796" fill="#e6c85c" roadId="101">
@@ -89,7 +105,7 @@
           <cornerLocal id="3" u="-3.600000" v="0.110000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2001" name="south_parallel_row_01" type="parkingSpace" s="10.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
+      <object id="2001" name="south_parallel_row_01" type="parkingSpace" s="40.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -98,7 +114,7 @@
           <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2002" name="south_parallel_row_02" type="parkingSpace" s="17.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
+      <object id="2002" name="south_parallel_row_02" type="parkingSpace" s="47.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -107,7 +123,7 @@
           <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2502" name="south_parallel_row_vehicle_02" type="vehicle" s="17.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="4.700000" width="2.000000" hdg="0.000000" fill="#8f8f8f" roadId="101">
+      <object id="2502" name="south_parallel_row_vehicle_02" type="vehicle" s="47.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="4.700000" width="2.000000" hdg="0.000000" fill="#8f8f8f" roadId="101">
         <outline>
           <cornerLocal id="0" u="-2.350000" v="-1.000000" z="0.0" height="0.0" />
           <cornerLocal id="1" u="2.350000" v="-1.000000" z="0.0" height="0.0" />
@@ -115,7 +131,7 @@
           <cornerLocal id="3" u="-2.350000" v="1.000000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2003" name="south_parallel_row_03" type="parkingSpace" s="24.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
+      <object id="2003" name="south_parallel_row_03" type="parkingSpace" s="54.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -124,7 +140,7 @@
           <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2004" name="south_parallel_row_04" type="parkingSpace" s="40.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
+      <object id="2004" name="south_parallel_row_04" type="parkingSpace" s="66.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -133,7 +149,7 @@
           <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2005" name="south_parallel_row_05" type="parkingSpace" s="47.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
+      <object id="2005" name="south_parallel_row_05" type="parkingSpace" s="73.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -142,7 +158,7 @@
           <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2505" name="south_parallel_row_vehicle_05" type="vehicle" s="47.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="4.700000" width="2.000000" hdg="0.000000" fill="#8f8f8f" roadId="101">
+      <object id="2505" name="south_parallel_row_vehicle_05" type="vehicle" s="73.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="4.700000" width="2.000000" hdg="0.000000" fill="#8f8f8f" roadId="101">
         <outline>
           <cornerLocal id="0" u="-2.350000" v="-1.000000" z="0.0" height="0.0" />
           <cornerLocal id="1" u="2.350000" v="-1.000000" z="0.0" height="0.0" />
@@ -150,7 +166,7 @@
           <cornerLocal id="3" u="-2.350000" v="1.000000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2006" name="south_parallel_row_06" type="parkingSpace" s="54.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
+      <object id="2006" name="south_parallel_row_06" type="parkingSpace" s="80.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -159,7 +175,7 @@
           <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2007" name="south_parallel_row_07" type="parkingSpace" s="66.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
+      <object id="2007" name="south_parallel_row_07" type="parkingSpace" s="96.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -168,7 +184,7 @@
           <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2008" name="south_parallel_row_08" type="parkingSpace" s="73.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
+      <object id="2008" name="south_parallel_row_08" type="parkingSpace" s="103.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -177,42 +193,7 @@
           <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="2508" name="south_parallel_row_vehicle_08" type="vehicle" s="73.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="4.700000" width="2.000000" hdg="0.000000" fill="#8f8f8f" roadId="101">
-        <outline>
-          <cornerLocal id="0" u="-2.350000" v="-1.000000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="2.350000" v="-1.000000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="2.350000" v="1.000000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-2.350000" v="1.000000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="2009" name="south_parallel_row_09" type="parkingSpace" s="80.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
-        <parkingSpace access="all" />
-        <outline>
-          <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.100000" v="1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="2010" name="south_parallel_row_10" type="parkingSpace" s="96.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
-        <parkingSpace access="all" />
-        <outline>
-          <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.100000" v="1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="2011" name="south_parallel_row_11" type="parkingSpace" s="103.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="101">
-        <parkingSpace access="all" />
-        <outline>
-          <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.100000" v="1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="2012" name="south_parallel_row_12" type="parkingSpace" s="110.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" subtype="reserved" fill="#f4d35e" roadId="101">
+      <object id="2009" name="south_parallel_row_09" type="parkingSpace" s="110.000000" t="-8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" subtype="reserved" fill="#f4d35e" roadId="101">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
@@ -899,84 +880,84 @@
           <cornerLocal id="3" u="-2.700000" v="1.300000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8001" name="west_crosswalk_01" type="crosswalk" s="9.200000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8000" name="west_pedestrian_walkway" type="pedestrianWalkway" s="10.000000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.200000" width="1.600000" hdg="1.570796" fill="#f7f4df" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-3.600000" v="-0.800000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="3.600000" v="-0.800000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="3.600000" v="0.800000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-3.600000" v="0.800000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8002" name="west_crosswalk_02" type="crosswalk" s="9.600000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8010" name="east_pedestrian_walkway" type="pedestrianWalkway" s="110.000000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.200000" width="1.600000" hdg="1.570796" fill="#f7f4df" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-3.600000" v="-0.800000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="3.600000" v="-0.800000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="3.600000" v="0.800000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-3.600000" v="0.800000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8003" name="west_crosswalk_03" type="crosswalk" s="10.000000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8100" name="column_01" type="column" s="28.000000" t="-16.500000" zOffset="0.0" validLength="0.0" orientation="none" length="0.800000" width="0.800000" hdg="0.000000" fill="#6e6e68" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="0.400000" v="0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-0.400000" v="0.400000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8004" name="west_crosswalk_04" type="crosswalk" s="10.400000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8101" name="column_02" type="column" s="28.000000" t="16.500000" zOffset="0.0" validLength="0.0" orientation="none" length="0.800000" width="0.800000" hdg="0.000000" fill="#6e6e68" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="0.400000" v="0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-0.400000" v="0.400000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8005" name="west_crosswalk_05" type="crosswalk" s="10.800000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8102" name="column_03" type="column" s="51.500000" t="-16.500000" zOffset="0.0" validLength="0.0" orientation="none" length="0.800000" width="0.800000" hdg="0.000000" fill="#6e6e68" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="0.400000" v="0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-0.400000" v="0.400000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8011" name="east_crosswalk_01" type="crosswalk" s="109.200000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8103" name="column_04" type="column" s="51.500000" t="16.500000" zOffset="0.0" validLength="0.0" orientation="none" length="0.800000" width="0.800000" hdg="0.000000" fill="#6e6e68" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="0.400000" v="0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-0.400000" v="0.400000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8012" name="east_crosswalk_02" type="crosswalk" s="109.600000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8104" name="column_05" type="column" s="70.500000" t="-16.500000" zOffset="0.0" validLength="0.0" orientation="none" length="0.800000" width="0.800000" hdg="0.000000" fill="#6e6e68" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="0.400000" v="0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-0.400000" v="0.400000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8013" name="east_crosswalk_03" type="crosswalk" s="110.000000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8105" name="column_06" type="column" s="70.500000" t="16.500000" zOffset="0.0" validLength="0.0" orientation="none" length="0.800000" width="0.800000" hdg="0.000000" fill="#6e6e68" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="0.400000" v="0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-0.400000" v="0.400000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8014" name="east_crosswalk_04" type="crosswalk" s="110.400000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8106" name="column_07" type="column" s="92.000000" t="-16.500000" zOffset="0.0" validLength="0.0" orientation="none" length="0.800000" width="0.800000" hdg="0.000000" fill="#6e6e68" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="0.400000" v="0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-0.400000" v="0.400000" z="0.0" height="0.0" />
         </outline>
       </object>
-      <object id="8015" name="east_crosswalk_05" type="crosswalk" s="110.800000" t="0.000000" zOffset="0.0" validLength="0.0" orientation="none" length="7.000000" width="0.320000" hdg="1.570796" fill="#ffffff" roadId="102">
+      <object id="8107" name="column_08" type="column" s="92.000000" t="16.500000" zOffset="0.0" validLength="0.0" orientation="none" length="0.800000" width="0.800000" hdg="0.000000" fill="#6e6e68" roadId="102">
         <outline>
-          <cornerLocal id="0" u="-3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.500000" v="-0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.500000" v="0.160000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.500000" v="0.160000" z="0.0" height="0.0" />
+          <cornerLocal id="0" u="-0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="1" u="0.400000" v="-0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="2" u="0.400000" v="0.400000" z="0.0" height="0.0" />
+          <cornerLocal id="3" u="-0.400000" v="0.400000" z="0.0" height="0.0" />
         </outline>
       </object>
     </objects>
@@ -1322,41 +1303,6 @@
         </outline>
       </object>
       <object id="7009" name="north_parallel_row_09" type="parkingSpace" s="80.000000" t="8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="103">
-        <parkingSpace access="all" />
-        <outline>
-          <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.100000" v="1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="7010" name="north_parallel_row_10" type="parkingSpace" s="96.000000" t="8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="103">
-        <parkingSpace access="all" />
-        <outline>
-          <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.100000" v="1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="7011" name="north_parallel_row_11" type="parkingSpace" s="103.000000" t="8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="103">
-        <parkingSpace access="all" />
-        <outline>
-          <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="3.100000" v="-1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="3.100000" v="1.175000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-3.100000" v="1.175000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="7511" name="north_parallel_row_vehicle_11" type="vehicle" s="103.000000" t="8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="4.700000" width="2.000000" hdg="0.000000" fill="#8f8f8f" roadId="103">
-        <outline>
-          <cornerLocal id="0" u="-2.350000" v="-1.000000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="2.350000" v="-1.000000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="2.350000" v="1.000000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-2.350000" v="1.000000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="7012" name="north_parallel_row_12" type="parkingSpace" s="110.000000" t="8.400000" zOffset="0.0" validLength="0.0" orientation="none" length="6.200000" width="2.350000" hdg="0.000000" fill="#e6e6e6" roadId="103">
         <parkingSpace access="all" />
         <outline>
           <cornerLocal id="0" u="-3.100000" v="-1.175000" z="0.0" height="0.0" />

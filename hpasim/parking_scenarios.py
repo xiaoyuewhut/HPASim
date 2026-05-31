@@ -360,28 +360,52 @@ def _angled_parking_bank(
     return tuple(objects)
 
 
-def _crosswalk(
+def _pedestrian_walkway(
     start_id: int,
     road_id: int,
     prefix: str,
     s: float,
-    offsets: tuple[float, ...],
+    t: float,
+    length: float,
+    width: float,
+    heading: float = math.pi / 2,
 ) -> tuple[BoxObject, ...]:
-    return tuple(
+    return (
         BoxObject(
-            start_id + index,
-            f"{prefix}_{index:02d}",
-            "crosswalk",
-            s + offset,
-            0.0,
-            7.0,
-            0.32,
-            math.pi / 2,
-            fill="#ffffff",
+            start_id,
+            prefix,
+            "pedestrianWalkway",
+            s,
+            t,
+            length,
+            width,
+            heading,
+            fill="#f7f4df",
             road_id=road_id,
-        )
-        for index, offset in enumerate(offsets, start=1)
+        ),
     )
+
+
+def _column_grid(start_id: int, road_id: int) -> tuple[BoxObject, ...]:
+    columns: list[BoxObject] = []
+    column_id = start_id
+    for s in (28.0, 51.5, 70.5, 92.0):
+        for t in (-16.5, 16.5):
+            columns.append(
+                BoxObject(
+                    column_id,
+                    f"column_{column_id - start_id + 1:02d}",
+                    "column",
+                    s,
+                    t,
+                    0.8,
+                    0.8,
+                    fill="#6e6e68",
+                    road_id=road_id,
+                )
+            )
+            column_id += 1
+    return tuple(columns)
 
 
 def _parking_lot_objects() -> tuple[BoxObject, ...]:
@@ -414,21 +438,24 @@ def _parking_lot_objects() -> tuple[BoxObject, ...]:
         BoxObject(1002, "north_outer_wall", "barrier", 60.0, 62.0, 120.0, 0.28, fill="#3f3f3c", road_id=101),
         BoxObject(1003, "west_outer_wall", "barrier", 0.0, 24.0, 76.0, 0.28, math.pi / 2, fill="#3f3f3c", road_id=101),
         BoxObject(1004, "east_outer_wall", "barrier", 120.0, 24.0, 76.0, 0.28, math.pi / 2, fill="#3f3f3c", road_id=101),
-        BoxObject(1005, "entry_gate", "gate", 10.0, -11.0, 12.0, 0.42, fill="#2f80a7", road_id=101),
-        BoxObject(1006, "exit_gate", "gate", 110.0, 59.0, 12.0, 0.42, fill="#2f80a7", road_id=101),
+        BoxObject(1005, "entry_barrier_gate", "gate", 11.0, -8.4, 12.0, 0.42, fill="#2f80a7", road_id=101),
+        BoxObject(1006, "exit_barrier_gate", "gate", 109.0, 60.4, 12.0, 0.42, fill="#2f80a7", road_id=101),
+        BoxObject(1007, "entry_ramp", "ramp", 15.0, -12.1, 18.0, 2.2, fill="#dedbd1", road_id=101),
+        BoxObject(1008, "exit_ramp", "ramp", 105.0, 61.1, 18.0, 2.2, fill="#dedbd1", road_id=101),
         BoxObject(1011, "delivery_vehicle_block", "vehicle", 63.0, -0.8, 6.5, 2.35, fill="#7a7a74", road_id=102),
         BoxObject(1012, "work_zone_block", "barrier", 71.0, -3.0, 3.2, 1.4, math.radians(18.0), fill="#f2a12b", road_id=102),
         BoxObject(1013, "entry_speed_bump", "barrier", 36.0, 0.0, 7.2, 0.22, math.pi / 2, fill="#e6c85c", road_id=101),
         BoxObject(1014, "exit_speed_bump", "barrier", 84.0, 0.0, 7.2, 0.22, math.pi / 2, fill="#e6c85c", road_id=103),
     ]
-    objects.extend(_parallel_parking_bank(2000, 101, "south_parallel_row", parallel_spaces, -8.4, occupied_slots=(2, 5, 8), reserved_slots=(12,)))
+    objects.extend(_parallel_parking_bank(2000, 101, "south_parallel_row", parallel_spaces[3:], -8.4, occupied_slots=(2, 5), reserved_slots=(9,)))
     objects.extend(_parking_bank(3000, 101, "south_perpendicular_row", perpendicular_spaces, 7.8, math.pi / 2, occupied_slots=(4, 8, 14, 18), accessible_slots=(1,)))
     objects.extend(_angled_parking_bank(4000, 102, "central_lower_angled_row", angled_spaces, -7.2, math.radians(-60.0), occupied_slots=(2, 6, 10, 16)))
     objects.extend(_angled_parking_bank(5000, 102, "central_upper_angled_row", angled_spaces, 7.2, math.radians(60.0), target_slot=13, occupied_slots=(3, 7, 17), charging_slots=(19, 20)))
     objects.extend(_parking_bank(6000, 103, "north_perpendicular_row", perpendicular_spaces, -7.8, -math.pi / 2, occupied_slots=(5, 9, 13, 19), reserved_slots=(2,)))
-    objects.extend(_parallel_parking_bank(7000, 103, "north_parallel_row", parallel_spaces, 8.4, occupied_slots=(3, 7, 11)))
-    objects.extend(_crosswalk(8000, 102, "west_crosswalk", 10.0, (-0.8, -0.4, 0.0, 0.4, 0.8)))
-    objects.extend(_crosswalk(8010, 102, "east_crosswalk", 110.0, (-0.8, -0.4, 0.0, 0.4, 0.8)))
+    objects.extend(_parallel_parking_bank(7000, 103, "north_parallel_row", parallel_spaces[:-3], 8.4, occupied_slots=(3, 7)))
+    objects.extend(_pedestrian_walkway(8000, 102, "west_pedestrian_walkway", 10.0, 0.0, 7.2, 1.6))
+    objects.extend(_pedestrian_walkway(8010, 102, "east_pedestrian_walkway", 110.0, 0.0, 7.2, 1.6))
+    objects.extend(_column_grid(8100, 102))
     return tuple(objects)
 
 

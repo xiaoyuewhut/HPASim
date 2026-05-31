@@ -144,10 +144,12 @@ def _object_style(obj: ET.Element) -> tuple[str, str, float]:
         return "#efd66f", "#947b20", 1.0
     if obj_type == "gate":
         return fill or "#2f80a7", "#204b61", 1.2
-    if obj_type == "island":
-        return fill or "#8dbb75", "#547744", 1.1
-    if obj_type == "crosswalk":
-        return "#ffffff", "#d4d4cc", 0.4
+    if obj_type == "ramp":
+        return fill or "#dedbd1", "#9d998f", 0.9
+    if obj_type == "column":
+        return fill or "#6e6e68", "#333330", 1.2
+    if obj_type == "pedestrianWalkway":
+        return fill or "#f7f4df", "#d7d0a8", 0.55
     if obj_type == "parkingSpace":
         return "#fafaf7", "#8e8e86", 0.85
     if obj_type == "vehicle":
@@ -161,15 +163,15 @@ def _object_style(obj: ET.Element) -> tuple[str, str, float]:
 
 def _object_zorder(obj: ET.Element) -> int:
     obj_type = obj.get("type", "")
-    if obj_type == "crosswalk":
+    if obj_type in {"pedestrianWalkway", "ramp"}:
         return 3
     if obj_type == "parkingSpace":
         return 4
-    if obj_type in {"island", "gate"}:
+    if obj_type == "gate":
         return 5
     if obj_type == "vehicle":
         return 6
-    if obj_type in {"barrier", "curbstone"}:
+    if obj_type in {"barrier", "curbstone", "column"}:
         return 7
     return 5
 
