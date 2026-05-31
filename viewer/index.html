@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HPASim Interactive Parking Viewer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #171817;
+      --panel: #252724;
+      --panel-border: #3a3d38;
+      --text: #f1f0e8;
+      --muted: #a7aba1;
+      --accent: #52b7d8;
+      --warn: #e8b650;
+      --danger: #d36b5f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.45 "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 300px minmax(0, 1fr);
+      height: 100vh;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--panel-border);
+      background: var(--panel);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 36px;
+    }
+
+    .mark {
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--accent);
+      transform: rotate(45deg);
+    }
+
+    h1 {
+      font-size: 17px;
+      line-height: 1.15;
+      margin: 0;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+
+    .status {
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 12px;
+      background: #1f211f;
+      min-height: 114px;
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 3px;
+    }
+
+    .value {
+      overflow-wrap: anywhere;
+      font-weight: 600;
+      min-height: 20px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      background: #30342f;
+      color: var(--text);
+      padding: 9px 11px;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+    }
+
+    button:hover {
+      border-color: var(--accent);
+    }
+
+    .legend {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 10px;
+      border: 1px solid #0008;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      min-width: 0;
+      background:
+        linear-gradient(90deg, #20221f 1px, transparent 1px),
+        linear-gradient(#20221f 1px, transparent 1px),
+        #181a18;
+      background-size: 28px 28px;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+
+    .toast {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      max-width: min(520px, calc(100% - 32px));
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #20231fd9;
+      color: var(--muted);
+      backdrop-filter: blur(10px);
+      pointer-events: none;
+    }
+
+    .error {
+      color: var(--danger);
+    }
+
+    @media (max-width: 780px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--panel-border);
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .legend {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <h1>HPASim Parking Viewer</h1>
+      </div>
+
+      <section class="status" aria-live="polite">
+        <div class="label">当前车位</div>
+        <div class="value" id="hoverSlot">未选择</div>
+        <div class="label" style="margin-top: 10px;">规划状态</div>
+        <div class="value" id="planStatus">点击任意空车位规划路径</div>
+      </section>
+
+      <section class="metric-grid">
+        <div>
+          <div class="label">车位数</div>
+          <div class="value" id="spaceCount">-</div>
+        </div>
+        <div>
+          <div class="label">路径点</div>
+          <div class="value" id="pathCount">-</div>
+        </div>
+      </section>
+
+      <button id="resetView" type="button">重置视图</button>
+
+      <section class="legend" aria-label="legend">
+        <div class="legend-row"><span class="swatch" style="background:#474a45"></span>行车通道</div>
+        <div class="legend-row"><span class="swatch" style="background:#d7d2c5"></span>空车位</div>
+        <div class="legend-row"><span class="swatch" style="background:#52b7d8"></span>目标/选中车位</div>
+        <div class="legend-row"><span class="swatch" style="background:#777b73"></span>已占用车辆/障碍</div>
+        <div class="legend-row"><span class="swatch" style="background:#f1c75d"></span>规划路径</div>
+      </section>
+    </aside>
+
+    <section class="canvas-wrap">
+      <canvas id="mapCanvas"></canvas>
+      <div class="toast" id="toast">滚轮缩放，拖拽平移；点击车位后自动计算并显示路径。</div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("mapCanvas");
+    const ctx = canvas.getContext("2d");
+    const hoverSlot = document.getElementById("hoverSlot");
+    const planStatus = document.getElementById("planStatus");
+    const spaceCount = document.getElementById("spaceCount");
+    const pathCount = document.getElementById("pathCount");
+    const resetViewButton = document.getElementById("resetView");
+    const toast = document.getElementById("toast");
+
+    const state = {
+      map: null,
+      parkingSpaces: [],
+      occupiedSpaceNames: new Set(),
+      selected: null,
+      hovered: null,
+      path: [],
+      scale: 1,
+      offsetX: 0,
+      offsetY: 0,
+      dragging: false,
+      dragStart: null,
+      lastMouse: null,
+      devicePixelRatio: window.devicePixelRatio || 1,
+    };
+
+    const colors = {
+      road: "#474a45",
+      roadStroke: "#5b5f58",
+      space: "#d7d2c5",
+      target: "#52b7d8",
+      charging: "#90d9bd",
+      accessible: "#9dc8f0",
+      reserved: "#d9bb52",
+      vehicle: "#777b73",
+      barrier: "#4c4d49",
+      gate: "#3583a3",
+      ramp: "#b9b3a4",
+      walkway: "#bdb8a4",
+      selectedStroke: "#ffffff",
+      hoverStroke: "#f1c75d",
+      path: "#f1c75d",
+      ego: "#f0f0ea",
+    };
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      state.devicePixelRatio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * state.devicePixelRatio));
+      canvas.height = Math.max(1, Math.floor(rect.height * state.devicePixelRatio));
+      ctx.setTransform(state.devicePixelRatio, 0, 0, state.devicePixelRatio, 0, 0);
+      draw();
+    }
+
+    function fitView() {
+      if (!state.map) return;
+      const rect = canvas.getBoundingClientRect();
+      const bounds = state.map.bounds;
+      const width = bounds.maxX - bounds.minX;
+      const height = bounds.maxY - bounds.minY;
+      const padding = 34;
+      const scaleX = (rect.width - padding * 2) / width;
+      const scaleY = (rect.height - padding * 2) / height;
+      state.scale = Math.max(1, Math.min(scaleX, scaleY));
+      state.offsetX = padding - bounds.minX * state.scale + (rect.width - padding * 2 - width * state.scale) / 2;
+      state.offsetY = padding + bounds.maxY * state.scale + (rect.height - padding * 2 - height * state.scale) / 2;
+      draw();
+    }
+
+    function worldToScreen(point) {
+      return {
+        x: point.x * state.scale + state.offsetX,
+        y: -point.y * state.scale + state.offsetY,
+      };
+    }
+
+    function screenToWorld(point) {
+      return {
+        x: (point.x - state.offsetX) / state.scale,
+        y: -(point.y - state.offsetY) / state.scale,
+      };
+    }
+
+    function draw() {
+      const rect = canvas.getBoundingClientRect();
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      if (!state.map) return;
+
+      drawRoads();
+      drawObjects();
+      drawPath();
+      drawEgo();
+    }
+
+    function drawRoads() {
+      for (const road of state.map.roads) {
+        drawPolygon(road.polygon, colors.road, colors.roadStroke, 1);
+      }
+    }
+
+    function drawObjects() {
+      const objects = [...state.map.objects].sort((a, b) => objectLayer(a) - objectLayer(b));
+      for (const object of objects) {
+        const style = objectStyle(object);
+        drawPolygon(object.polygon, style.fill, style.stroke, style.width);
+      }
+    }
+
+    function objectLayer(object) {
+      if (object.type === "parkingSpace") return 1;
+      if (object.type === "pedestrianWalkway" || object.type === "ramp" || object.type === "gate") return 2;
+      return 3;
+    }
+
+    function objectStyle(object) {
+      if (object.type === "parkingSpace") {
+        let fill = colors.space;
+        if (object.subtype === "target") fill = colors.target;
+        if (object.subtype === "charging") fill = colors.charging;
+        if (object.subtype === "accessible") fill = colors.accessible;
+        if (object.subtype === "reserved") fill = colors.reserved;
+        if (state.selected && object.name === state.selected.name) {
+          fill = colors.target;
+        }
+        const stroke = state.hovered && object.name === state.hovered.name
+          ? colors.hoverStroke
+          : state.selected && object.name === state.selected.name
+            ? colors.selectedStroke
+            : "#74766f";
+        return { fill, stroke, width: state.selected && object.name === state.selected.name ? 2.2 : 1 };
+      }
+      if (object.type === "vehicle") return { fill: colors.vehicle, stroke: "#5a5d56", width: 1 };
+      if (object.type === "barrier") return { fill: colors.barrier, stroke: "#343631", width: 1 };
+      if (object.type === "gate") return { fill: colors.gate, stroke: "#27627a", width: 1 };
+      if (object.type === "ramp") return { fill: colors.ramp, stroke: "#8f897b", width: 1 };
+      if (object.type === "pedestrianWalkway") return { fill: colors.walkway, stroke: "#918b7a", width: 1 };
+      return { fill: object.fill || "#999", stroke: "#555", width: 1 };
+    }
+
+    function drawPolygon(points, fill, stroke, lineWidth) {
+      if (!points.length) return;
+      ctx.beginPath();
+      const first = worldToScreen(points[0]);
+      ctx.moveTo(first.x, first.y);
+      for (let i = 1; i < points.length; i += 1) {
+        const point = worldToScreen(points[i]);
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+
+    function drawPath() {
+      if (state.path.length < 2) return;
+      ctx.beginPath();
+      const first = worldToScreen(state.path[0]);
+      ctx.moveTo(first.x, first.y);
+      for (let i = 1; i < state.path.length; i += 1) {
+        const point = worldToScreen(state.path[i]);
+        ctx.lineTo(point.x, point.y);
+      }
+      ctx.strokeStyle = colors.path;
+      ctx.lineWidth = 4;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.stroke();
+
+      const end = worldToScreen(state.path[state.path.length - 1]);
+      ctx.beginPath();
+      ctx.arc(end.x, end.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = colors.path;
+      ctx.fill();
+    }
+
+    function drawEgo() {
+      const ego = state.map.scenario.egoStart;
+      const point = worldToScreen(ego);
+      ctx.save();
+      ctx.translate(point.x, point.y);
+      ctx.rotate(-ego.yaw);
+      ctx.beginPath();
+      ctx.moveTo(10, 0);
+      ctx.lineTo(-7, -6);
+      ctx.lineTo(-4, 0);
+      ctx.lineTo(-7, 6);
+      ctx.closePath();
+      ctx.fillStyle = colors.ego;
+      ctx.strokeStyle = "#1a1b19";
+      ctx.lineWidth = 1.5;
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function canvasPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    function pointInPolygon(point, polygon) {
+      let inside = false;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+        const pi = polygon[i];
+        const pj = polygon[j];
+        const intersects = ((pi.y > point.y) !== (pj.y > point.y))
+          && point.x < ((pj.x - pi.x) * (point.y - pi.y)) / (pj.y - pi.y) + pi.x;
+        if (intersects) inside = !inside;
+      }
+      return inside;
+    }
+
+    function findParkingSpace(worldPoint) {
+      for (let i = state.parkingSpaces.length - 1; i >= 0; i -= 1) {
+        const space = state.parkingSpaces[i];
+        if (pointInPolygon(worldPoint, space.polygon)) {
+          return space;
+        }
+      }
+      return null;
+    }
+
+    async function planTo(space) {
+      state.selected = space;
+      state.path = [];
+      pathCount.textContent = "-";
+      planStatus.textContent = "规划中...";
+      planStatus.classList.remove("error");
+      draw();
+
+      try {
+        const response = await fetch("/api/plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            target: space.name,
+            start: state.map.scenario.egoStart,
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload.error || "规划失败");
+        }
+        state.path = payload.path;
+        pathCount.textContent = String(payload.path.length);
+        planStatus.textContent = space.name;
+      } catch (error) {
+        planStatus.textContent = error.message;
+        planStatus.classList.add("error");
+      } finally {
+        draw();
+      }
+    }
+
+    function updateHover(event) {
+      const worldPoint = screenToWorld(canvasPoint(event));
+      state.hovered = findParkingSpace(worldPoint);
+      hoverSlot.textContent = state.hovered ? state.hovered.name : "未选择";
+      canvas.style.cursor = state.hovered ? "pointer" : state.dragging ? "grabbing" : "crosshair";
+      draw();
+    }
+
+    canvas.addEventListener("mousemove", (event) => {
+      if (state.dragging && state.dragStart) {
+        const point = canvasPoint(event);
+        state.offsetX = state.dragStart.offsetX + point.x - state.dragStart.x;
+        state.offsetY = state.dragStart.offsetY + point.y - state.dragStart.y;
+        draw();
+        return;
+      }
+      updateHover(event);
+    });
+
+    canvas.addEventListener("mousedown", (event) => {
+      state.lastMouse = canvasPoint(event);
+      state.dragging = true;
+      state.dragStart = {
+        ...state.lastMouse,
+        offsetX: state.offsetX,
+        offsetY: state.offsetY,
+      };
+      canvas.style.cursor = "grabbing";
+    });
+
+    window.addEventListener("mouseup", () => {
+      state.dragging = false;
+      state.dragStart = null;
+      canvas.style.cursor = state.hovered ? "pointer" : "crosshair";
+    });
+
+    canvas.addEventListener("click", (event) => {
+      const point = canvasPoint(event);
+      if (state.lastMouse && Math.hypot(point.x - state.lastMouse.x, point.y - state.lastMouse.y) > 4) {
+        return;
+      }
+      const space = findParkingSpace(screenToWorld(point));
+      if (space) planTo(space);
+    });
+
+    canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      const point = canvasPoint(event);
+      const before = screenToWorld(point);
+      const factor = event.deltaY < 0 ? 1.12 : 0.89;
+      state.scale = Math.max(2, Math.min(80, state.scale * factor));
+      const after = worldToScreen(before);
+      state.offsetX += point.x - after.x;
+      state.offsetY += point.y - after.y;
+      draw();
+    }, { passive: false });
+
+    resetViewButton.addEventListener("click", fitView);
+    window.addEventListener("resize", () => {
+      resizeCanvas();
+      fitView();
+    });
+
+    async function loadMap() {
+      const response = await fetch("/api/map");
+      state.map = await response.json();
+      state.parkingSpaces = state.map.objects.filter((object) => object.type === "parkingSpace");
+      const occupiedCenters = state.map.objects
+        .filter((object) => object.type === "vehicle")
+        .map((vehicle) => vehicle.center);
+      state.occupiedSpaceNames = new Set(
+        state.parkingSpaces
+          .filter((space) => occupiedCenters.some((center) => pointInPolygon(center, space.polygon)))
+          .map((space) => space.name)
+      );
+      spaceCount.textContent = String(state.parkingSpaces.length);
+      resizeCanvas();
+      fitView();
+    }
+
+    loadMap().catch((error) => {
+      toast.textContent = error.message;
+      planStatus.textContent = "地图加载失败";
+      planStatus.classList.add("error");
+    });
+  </script>
+</body>
+</html>

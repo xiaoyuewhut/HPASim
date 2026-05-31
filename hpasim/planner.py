@@ -39,6 +39,9 @@ class MapObject:
     polygon: tuple[Point, ...]
     center: Point
     heading: float
+    length: float
+    width: float
+    fill: str | None
 
 
 @dataclass(frozen=True)
@@ -207,6 +210,9 @@ def load_opendrive_map(path: Path) -> OpenDriveMap:
                     polygon=tuple(polygon),
                     center=center,
                     heading=frame.heading + _float_attr(obj, "hdg"),
+                    length=_float_attr(obj, "length"),
+                    width=_float_attr(obj, "width"),
+                    fill=obj.get("fill"),
                 )
             )
 
