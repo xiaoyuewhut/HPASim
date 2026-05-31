@@ -146,8 +146,6 @@ def _object_style(obj: ET.Element) -> tuple[str, str, float]:
         return fill or "#2f80a7", "#204b61", 1.2
     if obj_type == "ramp":
         return fill or "#dedbd1", "#9d998f", 0.9
-    if obj_type == "column":
-        return fill or "#6e6e68", "#333330", 1.2
     if obj_type == "pedestrianWalkway":
         return fill or "#f7f4df", "#d7d0a8", 0.55
     if obj_type == "parkingSpace":
@@ -171,7 +169,7 @@ def _object_zorder(obj: ET.Element) -> int:
         return 5
     if obj_type == "vehicle":
         return 6
-    if obj_type in {"barrier", "curbstone", "column"}:
+    if obj_type in {"barrier", "curbstone"}:
         return 7
     return 5
 

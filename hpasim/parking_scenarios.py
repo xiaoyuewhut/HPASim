@@ -386,28 +386,6 @@ def _pedestrian_walkway(
     )
 
 
-def _column_grid(start_id: int, road_id: int) -> tuple[BoxObject, ...]:
-    columns: list[BoxObject] = []
-    column_id = start_id
-    for s in (28.0, 51.5, 70.5, 92.0):
-        for t in (-16.5, 16.5):
-            columns.append(
-                BoxObject(
-                    column_id,
-                    f"column_{column_id - start_id + 1:02d}",
-                    "column",
-                    s,
-                    t,
-                    0.8,
-                    0.8,
-                    fill="#6e6e68",
-                    road_id=road_id,
-                )
-            )
-            column_id += 1
-    return tuple(columns)
-
-
 def _parking_lot_objects() -> tuple[BoxObject, ...]:
     perpendicular_spaces = tuple(
         round(start + index * 2.75, 2)
@@ -455,7 +433,6 @@ def _parking_lot_objects() -> tuple[BoxObject, ...]:
     objects.extend(_parallel_parking_bank(7000, 103, "north_parallel_row", parallel_spaces[:-3], 8.4, occupied_slots=(3, 7)))
     objects.extend(_pedestrian_walkway(8000, 102, "west_pedestrian_walkway", 10.0, 0.0, 7.2, 1.6))
     objects.extend(_pedestrian_walkway(8010, 102, "east_pedestrian_walkway", 110.0, 0.0, 7.2, 1.6))
-    objects.extend(_column_grid(8100, 102))
     return tuple(objects)
 
 

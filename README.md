@@ -17,8 +17,8 @@ The active scenario is `parking_lot_full`.
 The map includes entry and exit drives, three longitudinal drive aisles, three
 cross aisles, dense perpendicular spaces, angled spaces, boundary-side parallel
 spaces, occupied vehicles, charging spaces, accessible spaces, reserved spaces,
-pedestrian walkways, structural columns, entry and exit ramps, barrier gates,
-speed bumps, and static obstacles.
+pedestrian walkways, entry and exit ramps, barrier gates, speed bumps, and
+static obstacles.
 
 ## Generate The Map
 
