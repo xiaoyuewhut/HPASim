@@ -40,6 +40,16 @@ no axis text.
 The vehicle model is a front-steering kinematic bicycle model with state
 `x, y, yaw, v` and control input `steer, acceleration`.
 
+## Route Planning
+
+The planner loads the generated OpenDRIVE map, builds a grid occupancy map from
+drive aisles and static obstacles, and runs A* to produce a route from the ego
+start pose toward the target parking space.
+
+```powershell
+uv run python scripts/plan_route.py
+```
+
 Run the tests:
 
 ```powershell
@@ -51,4 +61,5 @@ uv run python -m unittest discover -s tests
 - `hpasim/parking_scenarios.py`: scenario definition and OpenDRIVE generation.
 - `hpasim/plot_opendrive.py`: matplotlib renderer.
 - `hpasim/vehicle.py`: front-steering kinematic vehicle model.
+- `hpasim/planner.py`: grid route planner for OpenDRIVE maps.
 - `docs/parking_test_scenarios.md`: detailed map notes.

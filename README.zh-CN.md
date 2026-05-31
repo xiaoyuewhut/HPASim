@@ -36,6 +36,15 @@ uv run python hpasim/plot_opendrive.py
 车辆模型采用前轮转向运动学自行车模型，状态为 `x, y, yaw, v`，控制量为
 `steer, acceleration`。
 
+## 路线规划
+
+路线规划器会读取生成的 OpenDRIVE 地图，根据行车通道和静态障碍物构建栅格
+占用地图，并使用 A* 从自车起点规划到目标车位附近。
+
+```powershell
+uv run python scripts/plan_route.py
+```
+
 运行测试：
 
 ```powershell
@@ -47,4 +56,5 @@ uv run python -m unittest discover -s tests
 - `hpasim/parking_scenarios.py`：场景定义和 OpenDRIVE 生成逻辑。
 - `hpasim/plot_opendrive.py`：matplotlib 渲染器。
 - `hpasim/vehicle.py`：前轮转向车辆运动学模型。
+- `hpasim/planner.py`：基于 OpenDRIVE 地图的栅格路线规划器。
 - `docs/parking_test_scenarios.md`：地图细节说明。
