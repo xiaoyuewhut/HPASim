@@ -391,8 +391,8 @@ def _parking_lot_objects() -> tuple[BoxObject, ...]:
         for index in range(5)
     )
     angled_spaces = tuple(
-        round(start + index * 4.0, 2)
-        for start in (10.0, 38.5, 65.5, 96.0)
+        round(start + index * 3.75, 2)
+        for start in (10.5, 39.0, 66.0, 96.5)
         for index in range(5)
     )
     parallel_spaces = (
