@@ -10,7 +10,7 @@ inspection.
 
 The active scenario is `parking_lot_full`.
 
-- Target parking space: `central_upper_angled_row_10`
+- Target parking space: `central_upper_angled_row_13`
 - OpenDRIVE output: `maps/opendrive/parking_lot_full.xodr`
 - Preview output: `outputs/parking_lot_full.png`
 

@@ -4,7 +4,7 @@ HPASim currently uses one complete OpenDRIVE parking lot map:
 
 | Scenario | Target | Purpose |
 | --- | --- | --- |
-| `parking_lot_full` | `central_upper_angled_row_10` | End-to-end memory parking in a complete lot with entry, exit, drive aisles, mixed parking rows, occupied vehicles, islands, crossings, speed bumps, and a target bay. |
+| `parking_lot_full` | `central_upper_angled_row_13` | End-to-end memory parking in a complete lot with entry, exit, drive aisles, mixed parking rows, occupied vehicles, islands, crossings, speed bumps, and a target bay. |
 
 ## Map Content
 
