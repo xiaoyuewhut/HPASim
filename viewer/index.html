@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HPASim Interactive Parking Viewer</title>
+  <title>HPASim 交互式泊车可视化</title>
   <style>
     :root {
       color-scheme: dark;
@@ -13,13 +13,12 @@
       --text: #f1f0e8;
       --muted: #a7aba1;
       --accent: #52b7d8;
-      --warn: #e8b650;
+      --path: #f1c75d;
+      --reverse: #de735e;
       --danger: #d36b5f;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -68,12 +67,11 @@
       letter-spacing: 0;
     }
 
-    .status {
+    .panel {
       border: 1px solid var(--panel-border);
       border-radius: 8px;
       padding: 12px;
       background: #1f211f;
-      min-height: 114px;
     }
 
     .label {
@@ -94,6 +92,12 @@
       gap: 10px;
     }
 
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
     button {
       appearance: none;
       border: 1px solid var(--panel-border);
@@ -103,11 +107,19 @@
       padding: 9px 11px;
       cursor: pointer;
       font: inherit;
-      text-align: left;
+      text-align: center;
     }
 
-    button:hover {
-      border-color: var(--accent);
+    button:hover:not(:disabled) { border-color: var(--accent); }
+    button:disabled {
+      cursor: not-allowed;
+      color: #6f746b;
+      background: #252824;
+    }
+
+    .primary {
+      background: #24566b;
+      border-color: #347a99;
     }
 
     .legend {
@@ -152,7 +164,7 @@
       position: absolute;
       left: 16px;
       bottom: 16px;
-      max-width: min(520px, calc(100% - 32px));
+      max-width: min(560px, calc(100% - 32px));
       border: 1px solid var(--panel-border);
       border-radius: 8px;
       padding: 10px 12px;
@@ -162,9 +174,7 @@
       pointer-events: none;
     }
 
-    .error {
-      color: var(--danger);
-    }
+    .error { color: var(--danger); }
 
     @media (max-width: 780px) {
       .app {
@@ -179,9 +189,7 @@
         gap: 10px;
       }
 
-      .legend {
-        display: none;
-      }
+      .legend { display: none; }
     }
   </style>
 </head>
@@ -190,14 +198,14 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="mark" aria-hidden="true"></div>
-        <h1>HPASim Parking Viewer</h1>
+        <h1>HPASim 泊车可视化</h1>
       </div>
 
-      <section class="status" aria-live="polite">
+      <section class="panel" aria-live="polite">
         <div class="label">当前车位</div>
         <div class="value" id="hoverSlot">未选择</div>
-        <div class="label" style="margin-top: 10px;">规划状态</div>
-        <div class="value" id="planStatus">点击任意空车位规划路径</div>
+        <div class="label" style="margin-top: 10px;">状态</div>
+        <div class="value" id="planStatus">点击车位生成全局路径</div>
       </section>
 
       <section class="metric-grid">
@@ -209,23 +217,39 @@
           <div class="label">路径点</div>
           <div class="value" id="pathCount">-</div>
         </div>
+        <div>
+          <div class="label">轨迹点</div>
+          <div class="value" id="trajectoryCount">-</div>
+        </div>
+        <div>
+          <div class="label">档位</div>
+          <div class="value" id="gearStatus">-</div>
+        </div>
       </section>
 
-      <button id="resetView" type="button">重置视图</button>
+      <div class="button-row">
+        <button id="startDrive" class="primary" type="button" disabled>开始行驶</button>
+        <button id="pauseDrive" type="button" disabled>暂停</button>
+      </div>
+      <div class="button-row">
+        <button id="resetDrive" type="button" disabled>重置车辆</button>
+        <button id="resetView" type="button">重置视图</button>
+      </div>
 
       <section class="legend" aria-label="legend">
         <div class="legend-row"><span class="swatch" style="background:#474a45"></span>行车通道</div>
         <div class="legend-row"><span class="swatch" style="background:#d7d2c5"></span>空车位</div>
-        <div class="legend-row"><span class="swatch" style="background:#52b7d8"></span>目标/选中车位</div>
-        <div class="legend-row"><span class="swatch" style="background:#777b73"></span>已占用车辆/障碍</div>
-        <div class="legend-row"><span class="swatch" style="background:#f1c75d"></span>规划路径</div>
-        <div class="legend-row"><span class="swatch" style="background:#de735e"></span>倒车入库段</div>
+        <div class="legend-row"><span class="swatch" style="background:#52b7d8"></span>选中车位</div>
+        <div class="legend-row"><span class="swatch" style="background:#777b73"></span>车辆/障碍</div>
+        <div class="legend-row"><span class="swatch" style="background:#f1c75d"></span>前进路径</div>
+        <div class="legend-row"><span class="swatch" style="background:#de735e"></span>倒车段</div>
+        <div class="legend-row"><span class="swatch" style="background:#f0f0ea"></span>仿真车辆</div>
       </section>
     </aside>
 
     <section class="canvas-wrap">
       <canvas id="mapCanvas"></canvas>
-      <div class="toast" id="toast">滚轮缩放，拖拽平移；点击车位后自动计算并显示路径。</div>
+      <div class="toast" id="toast">点击车位生成全局路径，再点击“开始行驶”播放车辆运动。</div>
     </section>
   </main>
 
@@ -236,17 +260,25 @@
     const planStatus = document.getElementById("planStatus");
     const spaceCount = document.getElementById("spaceCount");
     const pathCount = document.getElementById("pathCount");
+    const trajectoryCount = document.getElementById("trajectoryCount");
+    const gearStatus = document.getElementById("gearStatus");
+    const startDriveButton = document.getElementById("startDrive");
+    const pauseDriveButton = document.getElementById("pauseDrive");
+    const resetDriveButton = document.getElementById("resetDrive");
     const resetViewButton = document.getElementById("resetView");
     const toast = document.getElementById("toast");
 
     const state = {
       map: null,
       parkingSpaces: [],
-      occupiedSpaceNames: new Set(),
       selected: null,
       hovered: null,
       path: [],
       segments: [],
+      trajectory: [],
+      vehicle: null,
+      animationIndex: 0,
+      animationTimer: null,
       scale: 1,
       offsetX: 0,
       offsetY: 0,
@@ -274,6 +306,7 @@
       path: "#f1c75d",
       reversePath: "#de735e",
       ego: "#f0f0ea",
+      egoRear: "#52b7d8",
     };
 
     function resizeCanvas() {
@@ -318,10 +351,10 @@
       const rect = canvas.getBoundingClientRect();
       ctx.clearRect(0, 0, rect.width, rect.height);
       if (!state.map) return;
-
       drawRoads();
       drawObjects();
       drawRoute();
+      drawTrajectoryTrace();
       drawEgo();
     }
 
@@ -352,9 +385,7 @@
         if (object.subtype === "charging") fill = colors.charging;
         if (object.subtype === "accessible") fill = colors.accessible;
         if (object.subtype === "reserved") fill = colors.reserved;
-        if (state.selected && object.name === state.selected.name) {
-          fill = colors.target;
-        }
+        if (state.selected && object.name === state.selected.name) fill = colors.target;
         const stroke = state.hovered && object.name === state.hovered.name
           ? colors.hoverStroke
           : state.selected && object.name === state.selected.name
@@ -390,14 +421,19 @@
     function drawRoute() {
       if (state.segments.length) {
         for (const segment of state.segments) {
-          drawPath(segment.points, segment.gear === "reverse" ? colors.reversePath : colors.path, segment.gear === "reverse");
+          drawPath(segment.points, segment.gear === "reverse" ? colors.reversePath : colors.path, segment.gear === "reverse", 4);
         }
         return;
       }
-      drawPath(state.path, colors.path, false);
+      drawPath(state.path, colors.path, false, 4);
     }
 
-    function drawPath(points, color, dashed) {
+    function drawTrajectoryTrace() {
+      if (state.trajectory.length < 2) return;
+      drawPath(state.trajectory.slice(0, state.animationIndex + 1), "#f0f0ea", false, 2);
+    }
+
+    function drawPath(points, color, dashed, lineWidth) {
       if (points.length < 2) return;
       ctx.beginPath();
       const first = worldToScreen(points[0]);
@@ -407,37 +443,36 @@
         ctx.lineTo(point.x, point.y);
       }
       ctx.strokeStyle = color;
-      ctx.lineWidth = 4;
+      ctx.lineWidth = lineWidth;
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
       ctx.setLineDash(dashed ? [8, 6] : []);
       ctx.stroke();
       ctx.setLineDash([]);
-
-      const end = worldToScreen(points[points.length - 1]);
-      ctx.beginPath();
-      ctx.arc(end.x, end.y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.fill();
     }
 
     function drawEgo() {
-      const ego = state.map.scenario.egoStart;
-      const point = worldToScreen(ego);
+      const vehicle = state.vehicle || state.map.scenario.egoStart;
+      const point = worldToScreen(vehicle);
       ctx.save();
       ctx.translate(point.x, point.y);
-      ctx.rotate(-ego.yaw);
+      ctx.rotate(-vehicle.yaw);
+      const length = Math.max(18, 4.6 * state.scale);
+      const width = Math.max(9, 2.0 * state.scale);
       ctx.beginPath();
-      ctx.moveTo(10, 0);
-      ctx.lineTo(-7, -6);
-      ctx.lineTo(-4, 0);
-      ctx.lineTo(-7, 6);
-      ctx.closePath();
+      ctx.rect(-length * 0.5, -width * 0.5, length, width);
       ctx.fillStyle = colors.ego;
-      ctx.strokeStyle = "#1a1b19";
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#10110f";
+      ctx.lineWidth = 1.6;
       ctx.fill();
       ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(length * 0.5, 0);
+      ctx.lineTo(length * 0.22, -width * 0.28);
+      ctx.lineTo(length * 0.22, width * 0.28);
+      ctx.closePath();
+      ctx.fillStyle = colors.egoRear;
+      ctx.fill();
       ctx.restore();
     }
 
@@ -461,45 +496,123 @@
     function findParkingSpace(worldPoint) {
       for (let i = state.parkingSpaces.length - 1; i >= 0; i -= 1) {
         const space = state.parkingSpaces[i];
-        if (pointInPolygon(worldPoint, space.polygon)) {
-          return space;
-        }
+        if (pointInPolygon(worldPoint, space.polygon)) return space;
       }
       return null;
     }
 
     async function planTo(space) {
+      stopAnimation();
       state.selected = space;
       state.path = [];
       state.segments = [];
+      state.trajectory = [];
+      state.vehicle = null;
+      state.animationIndex = 0;
       pathCount.textContent = "-";
+      trajectoryCount.textContent = "-";
+      gearStatus.textContent = "-";
+      startDriveButton.disabled = true;
+      pauseDriveButton.disabled = true;
+      resetDriveButton.disabled = true;
       planStatus.textContent = "规划中...";
       planStatus.classList.remove("error");
       draw();
 
       try {
-        const response = await fetch("/api/plan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            target: space.name,
-            start: state.map.scenario.egoStart,
-          }),
+        const payload = await postJson("/api/plan", {
+          target: space.name,
+          start: state.map.scenario.egoStart,
         });
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload.error || "规划失败");
-        }
         state.path = payload.path;
         state.segments = payload.segments || [];
         pathCount.textContent = String(payload.path.length);
-        planStatus.textContent = space.name;
+        planStatus.textContent = "全局路径已生成";
+        startDriveButton.disabled = false;
       } catch (error) {
         planStatus.textContent = error.message;
         planStatus.classList.add("error");
       } finally {
         draw();
       }
+    }
+
+    async function loadDriveTrajectory() {
+      if (!state.selected) return;
+      planStatus.textContent = "生成轨迹中...";
+      startDriveButton.disabled = true;
+      try {
+        const payload = await postJson("/api/drive", {
+          target: state.selected.name,
+          start: state.map.scenario.egoStart,
+        });
+        state.trajectory = payload.points;
+        state.animationIndex = 0;
+        state.vehicle = state.trajectory[0] || null;
+        trajectoryCount.textContent = String(state.trajectory.length);
+        resetDriveButton.disabled = false;
+        planStatus.textContent = "轨迹已生成，开始行驶";
+      } catch (error) {
+        planStatus.textContent = error.message;
+        planStatus.classList.add("error");
+      }
+    }
+
+    async function startDrive() {
+      if (!state.selected) return;
+      if (!state.trajectory.length) {
+        await loadDriveTrajectory();
+      }
+      if (!state.trajectory.length) return;
+      startDriveButton.disabled = true;
+      pauseDriveButton.disabled = false;
+      animate();
+    }
+
+    function animate() {
+      stopAnimation();
+      state.animationTimer = window.setInterval(() => {
+        if (state.animationIndex >= state.trajectory.length - 1) {
+          stopAnimation();
+          startDriveButton.disabled = false;
+          pauseDriveButton.disabled = true;
+          planStatus.textContent = "行驶完成";
+          return;
+        }
+        state.animationIndex += 1;
+        state.vehicle = state.trajectory[state.animationIndex];
+        gearStatus.textContent = state.vehicle.gear === "reverse" ? "倒车" : "前进";
+        draw();
+      }, 45);
+    }
+
+    function stopAnimation() {
+      if (state.animationTimer !== null) {
+        window.clearInterval(state.animationTimer);
+        state.animationTimer = null;
+      }
+    }
+
+    function resetDrive() {
+      stopAnimation();
+      state.animationIndex = 0;
+      state.vehicle = state.trajectory[0] || null;
+      gearStatus.textContent = state.vehicle ? (state.vehicle.gear === "reverse" ? "倒车" : "前进") : "-";
+      startDriveButton.disabled = !state.selected;
+      pauseDriveButton.disabled = true;
+      planStatus.textContent = state.selected ? "车辆已重置" : "点击车位生成全局路径";
+      draw();
+    }
+
+    async function postJson(url, body) {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "请求失败");
+      return payload;
     }
 
     function updateHover(event) {
@@ -524,11 +637,7 @@
     canvas.addEventListener("mousedown", (event) => {
       state.lastMouse = canvasPoint(event);
       state.dragging = true;
-      state.dragStart = {
-        ...state.lastMouse,
-        offsetX: state.offsetX,
-        offsetY: state.offsetY,
-      };
+      state.dragStart = { ...state.lastMouse, offsetX: state.offsetX, offsetY: state.offsetY };
       canvas.style.cursor = "grabbing";
     });
 
@@ -540,9 +649,7 @@
 
     canvas.addEventListener("click", (event) => {
       const point = canvasPoint(event);
-      if (state.lastMouse && Math.hypot(point.x - state.lastMouse.x, point.y - state.lastMouse.y) > 4) {
-        return;
-      }
+      if (state.lastMouse && Math.hypot(point.x - state.lastMouse.x, point.y - state.lastMouse.y) > 4) return;
       const space = findParkingSpace(screenToWorld(point));
       if (space) planTo(space);
     });
@@ -559,6 +666,14 @@
       draw();
     }, { passive: false });
 
+    startDriveButton.addEventListener("click", startDrive);
+    pauseDriveButton.addEventListener("click", () => {
+      stopAnimation();
+      pauseDriveButton.disabled = true;
+      startDriveButton.disabled = false;
+      planStatus.textContent = "已暂停";
+    });
+    resetDriveButton.addEventListener("click", resetDrive);
     resetViewButton.addEventListener("click", fitView);
     window.addEventListener("resize", () => {
       resizeCanvas();
@@ -569,14 +684,6 @@
       const response = await fetch("/api/map");
       state.map = await response.json();
       state.parkingSpaces = state.map.objects.filter((object) => object.type === "parkingSpace");
-      const occupiedCenters = state.map.objects
-        .filter((object) => object.type === "vehicle")
-        .map((vehicle) => vehicle.center);
-      state.occupiedSpaceNames = new Set(
-        state.parkingSpaces
-          .filter((space) => occupiedCenters.some((center) => pointInPolygon(center, space.polygon)))
-          .map((space) => space.name)
-      );
       spaceCount.textContent = String(state.parkingSpaces.length);
       resizeCanvas();
       fitView();

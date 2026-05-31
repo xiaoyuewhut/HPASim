@@ -17,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from hpasim.map_payload import DEFAULT_SCENARIO, build_map_payload, load_default_map
 from hpasim.planner import GridPlannerConfig, GridRoutePlanner
+from hpasim.trajectory import TrajectoryPlanner, TrajectoryPlannerConfig
 
 
 VIEWER_DIR = PROJECT_ROOT / "viewer"
@@ -30,6 +31,7 @@ class ViewerState:
             self.opendrive_map,
             GridPlannerConfig(resolution=1.0, obstacle_padding=0.2),
         )
+        self.trajectory_planner = TrajectoryPlanner(TrajectoryPlannerConfig(spacing=0.5, forward_speed=1.2))
 
 
 class ViewerHandler(SimpleHTTPRequestHandler):
@@ -47,9 +49,15 @@ class ViewerHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self) -> None:
-        if self.path != "/api/plan":
-            self._write_json(HTTPStatus.NOT_FOUND, {"error": "unknown endpoint"})
+        if self.path == "/api/plan":
+            self._handle_plan()
             return
+        if self.path == "/api/drive":
+            self._handle_drive()
+            return
+        self._write_json(HTTPStatus.NOT_FOUND, {"error": "unknown endpoint"})
+
+    def _handle_plan(self) -> None:
         try:
             body = self._read_json()
             target = str(body["target"])
@@ -80,6 +88,41 @@ class ViewerHandler(SimpleHTTPRequestHandler):
             },
         )
 
+    def _handle_drive(self) -> None:
+        try:
+            body = self._read_json()
+            target = str(body["target"])
+            start = body.get("start") or {}
+            x = float(start.get("x", DEFAULT_SCENARIO.ego_start[0]))
+            y = float(start.get("y", DEFAULT_SCENARIO.ego_start[1]))
+            route = self.state.planner.plan_route_to_object((x, y), target)
+            trajectory = self.state.trajectory_planner.plan(route)
+        except KeyError as exc:
+            self._write_json(HTTPStatus.BAD_REQUEST, {"error": f"missing or unknown field: {exc}"})
+            return
+        except ValueError as exc:
+            self._write_json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            return
+
+        self._write_json(
+            HTTPStatus.OK,
+            {
+                "target": target,
+                "points": [
+                    {
+                        "x": point.x,
+                        "y": point.y,
+                        "yaw": point.yaw,
+                        "v": point.v,
+                        "gear": point.gear,
+                        "t": point.t,
+                        "s": point.s,
+                    }
+                    for point in trajectory.points
+                ],
+            },
+        )
+
     def _read_json(self) -> dict[str, Any]:
         length = int(self.headers.get("Content-Length", "0"))
         data = self.rfile.read(length)
@@ -97,7 +140,6 @@ class ViewerHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, format: str, *args: Any) -> None:
         sys.stderr.write(f"[viewer] {self.address_string()} {format % args}\n")
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
