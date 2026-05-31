@@ -387,12 +387,12 @@ def _crosswalk(
 def _parking_lot_objects() -> tuple[BoxObject, ...]:
     perpendicular_spaces = tuple(
         round(start + index * 2.75, 2)
-        for start in (9.2, 38.5, 65.5, 95.5)
-        for index in range(6)
+        for start in (10.0, 39.5, 66.5, 96.5)
+        for index in range(5)
     )
     angled_spaces = tuple(
-        round(start + index * 4.25, 2)
-        for start in (8.5, 38.5, 65.5, 95.5)
+        round(start + index * 4.0, 2)
+        for start in (10.0, 38.5, 65.5, 96.0)
         for index in range(5)
     )
     parallel_spaces = (
@@ -425,12 +425,12 @@ def _parking_lot_objects() -> tuple[BoxObject, ...]:
         BoxObject(1013, "entry_speed_bump", "barrier", 36.0, 0.0, 7.2, 0.22, math.pi / 2, fill="#e6c85c", road_id=101),
         BoxObject(1014, "exit_speed_bump", "barrier", 84.0, 0.0, 7.2, 0.22, math.pi / 2, fill="#e6c85c", road_id=103),
     ]
-    objects.extend(_parallel_parking_bank(2000, 101, "south_parallel_row", parallel_spaces, -10.2, occupied_slots=(2, 5, 8), reserved_slots=(12,)))
-    objects.extend(_parking_bank(3000, 101, "south_perpendicular_row", perpendicular_spaces, 7.8, math.pi / 2, occupied_slots=(4, 9, 15, 22), accessible_slots=(1,)))
+    objects.extend(_parallel_parking_bank(2000, 101, "south_parallel_row", parallel_spaces, -8.4, occupied_slots=(2, 5, 8), reserved_slots=(12,)))
+    objects.extend(_parking_bank(3000, 101, "south_perpendicular_row", perpendicular_spaces, 7.8, math.pi / 2, occupied_slots=(4, 8, 14, 18), accessible_slots=(1,)))
     objects.extend(_angled_parking_bank(4000, 102, "central_lower_angled_row", angled_spaces, -7.2, math.radians(-60.0), occupied_slots=(2, 6, 10, 16)))
     objects.extend(_angled_parking_bank(5000, 102, "central_upper_angled_row", angled_spaces, 7.2, math.radians(60.0), target_slot=13, occupied_slots=(3, 7, 17), charging_slots=(19, 20)))
-    objects.extend(_parking_bank(6000, 103, "north_perpendicular_row", perpendicular_spaces, -7.8, -math.pi / 2, occupied_slots=(5, 12, 18, 23), reserved_slots=(2,)))
-    objects.extend(_parallel_parking_bank(7000, 103, "north_parallel_row", parallel_spaces, 10.2, occupied_slots=(3, 7, 11)))
+    objects.extend(_parking_bank(6000, 103, "north_perpendicular_row", perpendicular_spaces, -7.8, -math.pi / 2, occupied_slots=(5, 9, 13, 19), reserved_slots=(2,)))
+    objects.extend(_parallel_parking_bank(7000, 103, "north_parallel_row", parallel_spaces, 8.4, occupied_slots=(3, 7, 11)))
     objects.extend(_crosswalk(8000, 102, "west_crosswalk", 10.0, (-0.8, -0.4, 0.0, 0.4, 0.8)))
     objects.extend(_crosswalk(8010, 102, "east_crosswalk", 110.0, (-0.8, -0.4, 0.0, 0.4, 0.8)))
     return tuple(objects)
