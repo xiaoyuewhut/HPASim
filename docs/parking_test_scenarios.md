@@ -14,8 +14,8 @@ HPASim currently uses one complete OpenDRIVE parking lot map:
   boundary-side parallel spaces.
 - Occupied vehicles, accessible spaces, charging spaces, reserved spaces, and
   one target memory-parking bay.
-- Boundary walls, entry and exit gates, landscape islands, pedestrian crossings,
-  speed bumps, a delivery vehicle obstacle, and a work-zone obstacle.
+- Boundary walls, entry and exit gates, pedestrian crossings, speed bumps, a
+  delivery vehicle obstacle, and a work-zone obstacle.
 
 ## Modeling Notes
 

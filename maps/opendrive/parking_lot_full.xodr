@@ -467,38 +467,6 @@
       </laneSection>
     </lanes>
     <objects>
-      <object id="1007" name="center_island_west" type="island" s="39.000000" t="14.200000" zOffset="0.0" validLength="0.0" orientation="none" length="16.000000" width="1.800000" hdg="0.000000" fill="#8dbb75" roadId="102">
-        <outline>
-          <cornerLocal id="0" u="-8.000000" v="-0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="8.000000" v="-0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="8.000000" v="0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-8.000000" v="0.900000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="1008" name="center_island_east" type="island" s="81.000000" t="14.200000" zOffset="0.0" validLength="0.0" orientation="none" length="16.000000" width="1.800000" hdg="0.000000" fill="#8dbb75" roadId="102">
-        <outline>
-          <cornerLocal id="0" u="-8.000000" v="-0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="8.000000" v="-0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="8.000000" v="0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-8.000000" v="0.900000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="1009" name="lower_island_west" type="island" s="39.000000" t="-14.200000" zOffset="0.0" validLength="0.0" orientation="none" length="16.000000" width="1.800000" hdg="0.000000" fill="#8dbb75" roadId="102">
-        <outline>
-          <cornerLocal id="0" u="-8.000000" v="-0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="8.000000" v="-0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="8.000000" v="0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-8.000000" v="0.900000" z="0.0" height="0.0" />
-        </outline>
-      </object>
-      <object id="1010" name="lower_island_east" type="island" s="81.000000" t="-14.200000" zOffset="0.0" validLength="0.0" orientation="none" length="16.000000" width="1.800000" hdg="0.000000" fill="#8dbb75" roadId="102">
-        <outline>
-          <cornerLocal id="0" u="-8.000000" v="-0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="1" u="8.000000" v="-0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="2" u="8.000000" v="0.900000" z="0.0" height="0.0" />
-          <cornerLocal id="3" u="-8.000000" v="0.900000" z="0.0" height="0.0" />
-        </outline>
-      </object>
       <object id="1011" name="delivery_vehicle_block" type="vehicle" s="63.000000" t="-0.800000" zOffset="0.0" validLength="0.0" orientation="none" length="6.500000" width="2.350000" hdg="0.000000" fill="#7a7a74" roadId="102">
         <outline>
           <cornerLocal id="0" u="-3.250000" v="-1.175000" z="0.0" height="0.0" />
