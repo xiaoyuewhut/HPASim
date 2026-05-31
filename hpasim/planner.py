@@ -32,6 +32,14 @@ class RoadFrame:
 
 
 @dataclass(frozen=True)
+class RoadGuide:
+    start: Point
+    end: Point
+    heading: float
+    lane_width: float
+
+
+@dataclass(frozen=True)
 class MapObject:
     name: str
     object_type: str
@@ -47,6 +55,7 @@ class MapObject:
 @dataclass(frozen=True)
 class OpenDriveMap:
     road_polygons: tuple[tuple[Point, ...], ...]
+    road_guides: tuple[RoadGuide, ...]
     objects: tuple[MapObject, ...]
 
     def bounds(self, margin: float = 1.0) -> tuple[float, float, float, float]:
@@ -69,12 +78,41 @@ class OpenDriveMap:
 class GridPlannerConfig:
     resolution: float = 0.5
     obstacle_padding: float = 0.4
+    right_lane_weight: float = 0.7
+    reverse_staging_distance: float = 4.5
 
     def __post_init__(self) -> None:
         if self.resolution <= 0.0:
             raise ValueError("resolution must be positive")
         if self.obstacle_padding < 0.0:
             raise ValueError("obstacle_padding must be non-negative")
+        if self.right_lane_weight < 0.0:
+            raise ValueError("right_lane_weight must be non-negative")
+        if self.reverse_staging_distance <= 0.0:
+            raise ValueError("reverse_staging_distance must be positive")
+
+
+@dataclass(frozen=True)
+class PathSegment:
+    gear: str
+    points: tuple[Point, ...]
+
+
+@dataclass(frozen=True)
+class PlannedRoute:
+    target: MapObject
+    target_yaw: float | None
+    segments: tuple[PathSegment, ...]
+
+    @property
+    def points(self) -> list[Point]:
+        points: list[Point] = []
+        for segment in self.segments:
+            if points and segment.points and points[-1] == segment.points[0]:
+                points.extend(segment.points[1:])
+            else:
+                points.extend(segment.points)
+        return points
 
 
 @dataclass(frozen=True)
@@ -89,12 +127,33 @@ class GridRoutePlanner:
         grid.require_free(start_index, "start")
         grid.require_free(goal_index, "goal")
 
-        grid_path = _astar(grid, start_index, goal_index)
+        grid_path = _astar(grid, start_index, goal_index, self.config.right_lane_weight)
         return [grid.grid_to_world(index) for index in grid_path]
 
     def plan_to_object(self, start: Point, object_name: str) -> list[Point]:
-        goal = self.opendrive_map.find_object(object_name).center
-        return self.plan(start, goal)
+        return self.plan_route_to_object(start, object_name).points
+
+    def plan_route_to_object(self, start: Point, object_name: str) -> PlannedRoute:
+        target = self.opendrive_map.find_object(object_name)
+        if target.object_type != "parkingSpace":
+            return PlannedRoute(
+                target=target,
+                target_yaw=None,
+                segments=(PathSegment("forward", tuple(self.plan(start, target.center))),),
+            )
+
+        target_yaw = _head_out_yaw(target, self.opendrive_map.road_polygons)
+        staging = _reverse_staging_point(target, target_yaw, self.config.reverse_staging_distance)
+        forward_points = self.plan(start, staging)
+        reverse_points = _line_points(forward_points[-1], target.center, self.config.resolution)
+        return PlannedRoute(
+            target=target,
+            target_yaw=target_yaw,
+            segments=(
+                PathSegment("forward", tuple(forward_points)),
+                PathSegment("reverse", tuple(reverse_points)),
+            ),
+        )
 
 
 @dataclass(frozen=True)
@@ -105,6 +164,7 @@ class OccupancyGrid:
     height: int
     resolution: float
     occupied: frozenset[GridIndex]
+    lane_costs: dict[GridIndex, float]
 
     @classmethod
     def from_map(cls, opendrive_map: OpenDriveMap, config: GridPlannerConfig) -> "OccupancyGrid":
@@ -112,6 +172,7 @@ class OccupancyGrid:
         width = int(math.ceil((max_x - min_x) / config.resolution)) + 1
         height = int(math.ceil((max_y - min_y) / config.resolution)) + 1
         occupied: set[GridIndex] = set()
+        lane_costs: dict[GridIndex, float] = {}
 
         for ix in range(width):
             for iy in range(height):
@@ -121,8 +182,10 @@ class OccupancyGrid:
                     continue
                 if _point_blocked_by_objects(point, opendrive_map.objects, config.obstacle_padding):
                     occupied.add((ix, iy))
+                    continue
+                lane_costs[(ix, iy)] = _right_lane_cost(point, opendrive_map.road_guides)
 
-        return cls(min_x, min_y, width, height, config.resolution, frozenset(occupied))
+        return cls(min_x, min_y, width, height, config.resolution, frozenset(occupied), lane_costs)
 
     def world_to_grid(self, point: Point) -> GridIndex:
         return (
@@ -171,7 +234,7 @@ class OccupancyGrid:
                 return best[1]
         raise ValueError("no free cell found near index")
 
-    def neighbors(self, index: GridIndex) -> list[tuple[GridIndex, float]]:
+    def neighbors(self, index: GridIndex, right_lane_weight: float) -> list[tuple[GridIndex, float]]:
         neighbors: list[tuple[GridIndex, float]] = []
         for dx, dy in (
             (-1, 0),
@@ -185,18 +248,22 @@ class OccupancyGrid:
         ):
             next_index = (index[0] + dx, index[1] + dy)
             if self.is_free(next_index):
-                neighbors.append((next_index, math.hypot(dx, dy)))
+                base_cost = math.hypot(dx, dy)
+                lane_cost = self.lane_costs.get(next_index, 0.0)
+                neighbors.append((next_index, base_cost * (1.0 + right_lane_weight * lane_cost)))
         return neighbors
 
 
 def load_opendrive_map(path: Path) -> OpenDriveMap:
     root = ET.parse(path).getroot()
     road_polygons: list[tuple[Point, ...]] = []
+    road_guides: list[RoadGuide] = []
     objects: list[MapObject] = []
 
     for road in root.findall("road"):
         frame = _road_frame(road)
         road_polygons.append(_road_polygon(frame))
+        road_guides.append(_right_lane_guide(frame))
         for obj in road.findall("./objects/object"):
             polygon = _object_polygon(frame, obj)
             if not polygon:
@@ -216,7 +283,7 @@ def load_opendrive_map(path: Path) -> OpenDriveMap:
                 )
             )
 
-    return OpenDriveMap(tuple(road_polygons), tuple(objects))
+    return OpenDriveMap(tuple(road_polygons), tuple(road_guides), tuple(objects))
 
 
 def _float_attr(element: ET.Element, name: str, default: float = 0.0) -> float:
@@ -248,6 +315,16 @@ def _road_polygon(frame: RoadFrame) -> tuple[Point, ...]:
         frame.st_to_xy(frame.length, frame.left_width),
         frame.st_to_xy(0.0, frame.left_width),
     )
+
+
+def _right_lane_guide(frame: RoadFrame) -> RoadGuide:
+    if frame.right_width <= 0.0:
+        t = 0.0
+        lane_width = max(frame.left_width, 1.0)
+    else:
+        t = -frame.right_width / 2.0
+        lane_width = frame.right_width
+    return RoadGuide(frame.st_to_xy(0.0, t), frame.st_to_xy(frame.length, t), frame.heading, lane_width)
 
 
 def _object_polygon(frame: RoadFrame, obj: ET.Element) -> list[Point]:
@@ -321,7 +398,65 @@ def _distance_to_segment(point: Point, start: Point, end: Point) -> float:
     return math.hypot(px - projection[0], py - projection[1])
 
 
-def _astar(grid: OccupancyGrid, start: GridIndex, goal: GridIndex) -> list[GridIndex]:
+def _right_lane_cost(point: Point, guides: tuple[RoadGuide, ...]) -> float:
+    if not guides:
+        return 0.0
+    best_cost = math.inf
+    for guide in guides:
+        distance = _distance_to_segment(point, guide.start, guide.end)
+        normalized = distance / max(guide.lane_width * 0.5, 0.1)
+        best_cost = min(best_cost, min(normalized * normalized, 4.0))
+    return 0.0 if best_cost is math.inf else best_cost
+
+
+def _head_out_yaw(target: MapObject, road_polygons: tuple[tuple[Point, ...], ...]) -> float:
+    axis = (math.cos(target.heading), math.sin(target.heading))
+    half_length = target.length / 2.0
+    candidates = (
+        (target.center[0] + axis[0] * half_length, target.center[1] + axis[1] * half_length),
+        (target.center[0] - axis[0] * half_length, target.center[1] - axis[1] * half_length),
+    )
+    outward = min(candidates, key=lambda point: _distance_to_nearest_polygon(point, road_polygons))
+    return math.atan2(outward[1] - target.center[1], outward[0] - target.center[0])
+
+
+def _distance_to_nearest_polygon(point: Point, polygons: tuple[tuple[Point, ...], ...]) -> float:
+    distances: list[float] = []
+    for polygon in polygons:
+        if _point_in_polygon(point, polygon):
+            return 0.0
+        distances.extend(
+            _distance_to_segment(point, polygon[index], polygon[(index + 1) % len(polygon)])
+            for index in range(len(polygon))
+        )
+    return min(distances) if distances else math.inf
+
+
+def _reverse_staging_point(target: MapObject, target_yaw: float, distance: float) -> Point:
+    return (
+        target.center[0] + math.cos(target_yaw) * distance,
+        target.center[1] + math.sin(target_yaw) * distance,
+    )
+
+
+def _line_points(start: Point, end: Point, resolution: float) -> list[Point]:
+    distance = math.hypot(end[0] - start[0], end[1] - start[1])
+    steps = max(1, int(math.ceil(distance / resolution)))
+    return [
+        (
+            start[0] + (end[0] - start[0]) * step / steps,
+            start[1] + (end[1] - start[1]) * step / steps,
+        )
+        for step in range(steps + 1)
+    ]
+
+
+def _astar(
+    grid: OccupancyGrid,
+    start: GridIndex,
+    goal: GridIndex,
+    right_lane_weight: float,
+) -> list[GridIndex]:
     open_heap: list[tuple[float, GridIndex]] = []
     heappush(open_heap, (0.0, start))
     came_from: dict[GridIndex, GridIndex] = {}
@@ -332,7 +467,7 @@ def _astar(grid: OccupancyGrid, start: GridIndex, goal: GridIndex) -> list[GridI
         if current == goal:
             return _reconstruct_path(came_from, current)
 
-        for neighbor, move_cost in grid.neighbors(current):
+        for neighbor, move_cost in grid.neighbors(current, right_lane_weight):
             tentative = g_score[current] + move_cost
             if tentative >= g_score.get(neighbor, math.inf):
                 continue

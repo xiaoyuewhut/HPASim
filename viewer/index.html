@@ -219,6 +219,7 @@
         <div class="legend-row"><span class="swatch" style="background:#52b7d8"></span>目标/选中车位</div>
         <div class="legend-row"><span class="swatch" style="background:#777b73"></span>已占用车辆/障碍</div>
         <div class="legend-row"><span class="swatch" style="background:#f1c75d"></span>规划路径</div>
+        <div class="legend-row"><span class="swatch" style="background:#de735e"></span>倒车入库段</div>
       </section>
     </aside>
 
@@ -245,6 +246,7 @@
       selected: null,
       hovered: null,
       path: [],
+      segments: [],
       scale: 1,
       offsetX: 0,
       offsetY: 0,
@@ -270,6 +272,7 @@
       selectedStroke: "#ffffff",
       hoverStroke: "#f1c75d",
       path: "#f1c75d",
+      reversePath: "#de735e",
       ego: "#f0f0ea",
     };
 
@@ -318,7 +321,7 @@
 
       drawRoads();
       drawObjects();
-      drawPath();
+      drawRoute();
       drawEgo();
     }
 
@@ -384,25 +387,37 @@
       ctx.stroke();
     }
 
-    function drawPath() {
-      if (state.path.length < 2) return;
+    function drawRoute() {
+      if (state.segments.length) {
+        for (const segment of state.segments) {
+          drawPath(segment.points, segment.gear === "reverse" ? colors.reversePath : colors.path, segment.gear === "reverse");
+        }
+        return;
+      }
+      drawPath(state.path, colors.path, false);
+    }
+
+    function drawPath(points, color, dashed) {
+      if (points.length < 2) return;
       ctx.beginPath();
-      const first = worldToScreen(state.path[0]);
+      const first = worldToScreen(points[0]);
       ctx.moveTo(first.x, first.y);
-      for (let i = 1; i < state.path.length; i += 1) {
-        const point = worldToScreen(state.path[i]);
+      for (let i = 1; i < points.length; i += 1) {
+        const point = worldToScreen(points[i]);
         ctx.lineTo(point.x, point.y);
       }
-      ctx.strokeStyle = colors.path;
+      ctx.strokeStyle = color;
       ctx.lineWidth = 4;
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
+      ctx.setLineDash(dashed ? [8, 6] : []);
       ctx.stroke();
+      ctx.setLineDash([]);
 
-      const end = worldToScreen(state.path[state.path.length - 1]);
+      const end = worldToScreen(points[points.length - 1]);
       ctx.beginPath();
       ctx.arc(end.x, end.y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = colors.path;
+      ctx.fillStyle = color;
       ctx.fill();
     }
 
@@ -456,6 +471,7 @@
     async function planTo(space) {
       state.selected = space;
       state.path = [];
+      state.segments = [];
       pathCount.textContent = "-";
       planStatus.textContent = "规划中...";
       planStatus.classList.remove("error");
@@ -475,6 +491,7 @@
           throw new Error(payload.error || "规划失败");
         }
         state.path = payload.path;
+        state.segments = payload.segments || [];
         pathCount.textContent = String(payload.path.length);
         planStatus.textContent = space.name;
       } catch (error) {

@@ -57,7 +57,8 @@ uv run python scripts/serve_viewer.py
 ## 路线规划
 
 路线规划器读取生成的 OpenDRIVE 地图，根据行车通道和静态障碍物构建栅格占用地图，
-然后使用 A* 从自车起点规划到选中的车位附近。
+然后使用 A* 从自车起点规划到选中的车位附近。当前代价函数会偏好右侧车道中心，
+减少贴边行驶；当目标是车位时，规划结果会拆成前进段和末端倒车入库段，使车头更偏向朝外。
 
 ```powershell
 uv run python scripts/plan_route.py

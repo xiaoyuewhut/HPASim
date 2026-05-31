@@ -56,7 +56,7 @@ class ViewerHandler(SimpleHTTPRequestHandler):
             start = body.get("start") or {}
             x = float(start.get("x", DEFAULT_SCENARIO.ego_start[0]))
             y = float(start.get("y", DEFAULT_SCENARIO.ego_start[1]))
-            path = self.state.planner.plan_to_object((x, y), target)
+            route = self.state.planner.plan_route_to_object((x, y), target)
         except KeyError as exc:
             self._write_json(HTTPStatus.BAD_REQUEST, {"error": f"missing or unknown field: {exc}"})
             return
@@ -68,7 +68,15 @@ class ViewerHandler(SimpleHTTPRequestHandler):
             HTTPStatus.OK,
             {
                 "target": target,
-                "path": [{"x": x, "y": y} for x, y in path],
+                "targetYaw": route.target_yaw,
+                "path": [{"x": x, "y": y} for x, y in route.points],
+                "segments": [
+                    {
+                        "gear": segment.gear,
+                        "points": [{"x": x, "y": y} for x, y in segment.points],
+                    }
+                    for segment in route.segments
+                ],
             },
         )
 
