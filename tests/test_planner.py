@@ -45,14 +45,31 @@ class GridRoutePlannerTest(unittest.TestCase):
         opendrive_map = load_opendrive_map(MAP_PATH)
         planner = GridRoutePlanner(opendrive_map, GridPlannerConfig(resolution=1.0, obstacle_padding=0.2))
 
-        route = planner.plan_route_to_object((8.0, -1.7), "central_upper_angled_row_17")
         parking_polygons = tuple(obj.polygon for obj in opendrive_map.objects if obj.object_type == "parkingSpace")
 
-        for point in _sample_polyline(route.segments[0].points, step=0.25):
-            self.assertFalse(
-                any(_point_in_polygon(point, polygon) for polygon in parking_polygons),
-                f"forward route cuts through a parking space at {point}",
-            )
+        for target in (
+            "central_upper_angled_row_17",
+            "north_perpendicular_row_17",
+            "south_perpendicular_row_17",
+        ):
+            with self.subTest(target=target):
+                route = planner.plan_route_to_object((8.0, -1.7), target)
+                non_target_parking_polygons = tuple(
+                    obj.polygon
+                    for obj in opendrive_map.objects
+                    if obj.object_type == "parkingSpace" and obj.name != target
+                )
+                for point in _sample_polyline(route.segments[0].points, step=0.1):
+                    self.assertFalse(
+                        any(_point_in_polygon(point, polygon) for polygon in parking_polygons),
+                        f"forward route cuts through a parking space at {point}",
+                    )
+                for segment in route.segments:
+                    for point in _sample_polyline(segment.points, step=0.1):
+                        self.assertFalse(
+                            any(_point_in_polygon(point, polygon) for polygon in non_target_parking_polygons),
+                            f"route to {target} cuts through a non-target parking space at {point}",
+                        )
 
 
 def _sample_polyline(points: tuple[tuple[float, float], ...], step: float) -> list[tuple[float, float]]:

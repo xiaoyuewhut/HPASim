@@ -80,7 +80,6 @@ class GridPlannerConfig:
     obstacle_padding: float = 0.4
     right_lane_weight: float = 0.7
     reverse_staging_distance: float = 4.5
-    reverse_approach_distance: float = 6.0
 
     def __post_init__(self) -> None:
         if self.resolution <= 0.0:
@@ -91,8 +90,6 @@ class GridPlannerConfig:
             raise ValueError("right_lane_weight must be non-negative")
         if self.reverse_staging_distance <= 0.0:
             raise ValueError("reverse_staging_distance must be positive")
-        if self.reverse_approach_distance <= 0.0:
-            raise ValueError("reverse_approach_distance must be positive")
 
 
 @dataclass(frozen=True)
@@ -147,12 +144,7 @@ class GridRoutePlanner:
 
         target_yaw = _head_out_yaw(target, self.opendrive_map.road_polygons)
         staging = _reverse_staging_point(target, target_yaw, self.config.reverse_staging_distance)
-        approach = _reverse_approach_point(target, target_yaw, self.config.reverse_approach_distance)
-        forward_goal = _nearest_free_forward_goal(self.opendrive_map, self.config, approach, staging)
-        forward_points = self.plan(start, forward_goal)
-        staging_points = _line_points(forward_points[-1], staging, self.config.resolution)
-        if len(staging_points) > 1:
-            forward_points.extend(staging_points[1:])
+        forward_points = self.plan(start, staging)
         reverse_points = _line_points(forward_points[-1], target.center, self.config.resolution)
         return PlannedRoute(
             target=target,
@@ -445,72 +437,6 @@ def _reverse_staging_point(target: MapObject, target_yaw: float, distance: float
         target.center[0] + math.cos(target_yaw) * distance,
         target.center[1] + math.sin(target_yaw) * distance,
     )
-
-
-def _reverse_approach_point(target: MapObject, target_yaw: float, distance: float) -> Point:
-    return (
-        target.center[0] - math.cos(target_yaw) * distance,
-        target.center[1] - math.sin(target_yaw) * distance,
-    )
-
-
-def _nearest_free_forward_goal(
-    opendrive_map: OpenDriveMap,
-    config: GridPlannerConfig,
-    desired_goal: Point,
-    staging: Point,
-) -> Point:
-    grid = OccupancyGrid.from_map(opendrive_map, config)
-    desired_index = grid.world_to_grid(desired_goal)
-    staging_yaw = math.atan2(staging[1] - desired_goal[1], staging[0] - desired_goal[0])
-
-    best: tuple[float, GridIndex] | None = None
-    max_radius = max(4, int(math.ceil(4.0 / config.resolution)))
-    for radius in range(max_radius + 1):
-        for dx in range(-radius, radius + 1):
-            for dy in range(-radius, radius + 1):
-                if max(abs(dx), abs(dy)) != radius:
-                    continue
-                candidate = (desired_index[0] + dx, desired_index[1] + dy)
-                if not grid.is_free(candidate):
-                    continue
-                point = grid.grid_to_world(candidate)
-                if not _segment_is_free(point, staging, opendrive_map.road_polygons, opendrive_map.objects, config):
-                    continue
-                candidate_yaw = math.atan2(staging[1] - point[1], staging[0] - point[0])
-                heading_cost = abs(_normalize_angle(candidate_yaw - staging_yaw))
-                distance_cost = math.hypot(point[0] - desired_goal[0], point[1] - desired_goal[1])
-                score = distance_cost + 2.0 * heading_cost
-                if best is None or score < best[0]:
-                    best = (score, candidate)
-        if best is not None:
-            return grid.grid_to_world(best[1])
-    return grid.grid_to_world(grid.nearest_free(desired_index))
-
-
-def _normalize_angle(angle: float) -> float:
-    return (angle + math.pi) % (2.0 * math.pi) - math.pi
-
-
-def _segment_is_free(
-    start: Point,
-    end: Point,
-    road_polygons: tuple[tuple[Point, ...], ...],
-    objects: tuple[MapObject, ...],
-    config: GridPlannerConfig,
-) -> bool:
-    distance = math.hypot(end[0] - start[0], end[1] - start[1])
-    steps = max(1, int(math.ceil(distance / max(config.resolution * 0.5, 0.1))))
-    for step in range(steps + 1):
-        point = (
-            start[0] + (end[0] - start[0]) * step / steps,
-            start[1] + (end[1] - start[1]) * step / steps,
-        )
-        if not _point_in_any_polygon(point, road_polygons):
-            return False
-        if _point_blocked_by_objects(point, objects, config.obstacle_padding):
-            return False
-    return True
 
 
 def _line_points(start: Point, end: Point, resolution: float) -> list[Point]:
