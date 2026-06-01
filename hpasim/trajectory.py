@@ -41,7 +41,13 @@ class TrajectoryPlannerConfig:
     reverse_speed: float = -1.0
     wheelbase: float = 2.8
     smoothing_iterations: int = 5
-    speed_ramp_distance: float = 4.0
+    max_acceleration: float = 1.2
+    max_deceleration: float = 1.8
+    lateral_acceleration_limit: float = 1.0
+    curve_speed_floor: float = 0.45
+    reverse_curve_speed_floor: float = 0.25
+    parking_creep_distance: float = 2.0
+    parking_creep_speed: float = 0.35
     reverse_tangent_scale: float = 1.2
 
     def __post_init__(self) -> None:
@@ -55,8 +61,20 @@ class TrajectoryPlannerConfig:
             raise ValueError("wheelbase must be positive")
         if self.smoothing_iterations < 0:
             raise ValueError("smoothing_iterations must be non-negative")
-        if self.speed_ramp_distance <= 0.0:
-            raise ValueError("speed_ramp_distance must be positive")
+        if self.max_acceleration <= 0.0:
+            raise ValueError("max_acceleration must be positive")
+        if self.max_deceleration <= 0.0:
+            raise ValueError("max_deceleration must be positive")
+        if self.lateral_acceleration_limit <= 0.0:
+            raise ValueError("lateral_acceleration_limit must be positive")
+        if self.curve_speed_floor <= 0.0:
+            raise ValueError("curve_speed_floor must be positive")
+        if self.reverse_curve_speed_floor <= 0.0:
+            raise ValueError("reverse_curve_speed_floor must be positive")
+        if self.parking_creep_distance <= 0.0:
+            raise ValueError("parking_creep_distance must be positive")
+        if self.parking_creep_speed <= 0.0:
+            raise ValueError("parking_creep_speed must be positive")
         if self.reverse_tangent_scale <= 0.0:
             raise ValueError("reverse_tangent_scale must be positive")
 
@@ -79,18 +97,15 @@ class TrajectoryPlanner:
             raise ValueError("route must contain at least two trajectory samples")
 
         distances = _cumulative_distances(samples)
-        points: list[TrajectoryPoint] = []
-        t = 0.0
+        geometry_points: list[TrajectoryPoint] = []
         for index, (point, gear) in enumerate(samples):
             yaw = _sample_yaw(samples, index, route.target_yaw)
-            v = _sample_speed(samples, distances, index, self.config)
-            if points:
-                ds = math.hypot(point[0] - points[-1].x, point[1] - points[-1].y)
-                avg_speed = max((abs(points[-1].v) + abs(v)) * 0.5, 0.2)
-                t += ds / avg_speed
-            points.append(TrajectoryPoint(point[0], point[1], yaw, v, gear, t, distances[index]))
+            geometry_points.append(TrajectoryPoint(point[0], point[1], yaw, 0.0, gear, 0.0, distances[index]))
 
-        return Trajectory(tuple(_with_feedforward(points, self.config.wheelbase)))
+        shaped_points = _with_curvature_and_steer(geometry_points, self.config.wheelbase)
+        speeds = _speed_profile(shaped_points, distances, self.config)
+        timed_points = _with_speed_and_time(shaped_points, speeds)
+        return Trajectory(tuple(_with_acceleration(timed_points)))
 
 
 def _prepare_segments(route: PlannedRoute, config: TrajectoryPlannerConfig) -> tuple[PathSegment, ...]:
@@ -248,40 +263,6 @@ def _cumulative_distances(samples: list[tuple[Point, str]]) -> list[float]:
     return distances
 
 
-def _sample_speed(
-    samples: list[tuple[Point, str]],
-    distances: list[float],
-    index: int,
-    config: TrajectoryPlannerConfig,
-) -> float:
-    gear = samples[index][1]
-    nominal = config.reverse_speed if gear == "reverse" else config.forward_speed
-    signed_scale = min(
-        1.0,
-        _distance_since_gear_start(samples, distances, index) / config.speed_ramp_distance,
-        _distance_to_gear_end(samples, distances, index) / config.speed_ramp_distance,
-    )
-    if index == 0 or index == len(samples) - 1:
-        signed_scale = 0.0
-    return nominal * signed_scale
-
-
-def _distance_since_gear_start(samples: list[tuple[Point, str]], distances: list[float], index: int) -> float:
-    gear = samples[index][1]
-    start = index
-    while start > 0 and samples[start - 1][1] == gear:
-        start -= 1
-    return distances[index] - distances[start]
-
-
-def _distance_to_gear_end(samples: list[tuple[Point, str]], distances: list[float], index: int) -> float:
-    gear = samples[index][1]
-    end = index
-    while end < len(samples) - 1 and samples[end + 1][1] == gear:
-        end += 1
-    return distances[end] - distances[index]
-
-
 def _sample_yaw(samples: list[tuple[Point, str]], index: int, target_yaw: float | None) -> float:
     point, gear = samples[index]
     next_index = _same_gear_neighbor(samples, index, 1)
@@ -308,15 +289,11 @@ def _same_gear_neighbor(samples: list[tuple[Point, str]], index: int, step: int)
     return None
 
 
-def _with_feedforward(points: list[TrajectoryPoint], wheelbase: float) -> list[TrajectoryPoint]:
+def _with_curvature_and_steer(points: list[TrajectoryPoint], wheelbase: float) -> list[TrajectoryPoint]:
     updated: list[TrajectoryPoint] = []
     for index, point in enumerate(points):
         curvature = _curvature_at(points, index)
         steer = math.atan(wheelbase * curvature)
-        acceleration = 0.0
-        if index < len(points) - 1:
-            dt = max(points[index + 1].t - point.t, 1e-6)
-            acceleration = (points[index + 1].v - point.v) / dt
         updated.append(
             TrajectoryPoint(
                 x=point.x,
@@ -328,6 +305,123 @@ def _with_feedforward(points: list[TrajectoryPoint], wheelbase: float) -> list[T
                 s=point.s,
                 curvature=curvature,
                 steer=steer,
+                acceleration=point.acceleration,
+            )
+        )
+    return updated
+
+
+def _speed_profile(
+    points: list[TrajectoryPoint],
+    distances: list[float],
+    config: TrajectoryPlannerConfig,
+) -> list[float]:
+    limits = [_speed_limit_at(points, distances, index, config) for index in range(len(points))]
+    speeds = limits[:]
+
+    for index, point in enumerate(points):
+        if _is_stop_point(points, index):
+            speeds[index] = 0.0
+        if point.gear == "reverse":
+            speeds[index] = min(speeds[index], abs(config.reverse_speed))
+
+    for index in range(1, len(points)):
+        ds = max(distances[index] - distances[index - 1], 0.0)
+        reachable = math.sqrt(max(0.0, speeds[index - 1] ** 2 + 2.0 * config.max_acceleration * ds))
+        speeds[index] = min(speeds[index], reachable)
+
+    for index in range(len(points) - 2, -1, -1):
+        ds = max(distances[index + 1] - distances[index], 0.0)
+        reachable = math.sqrt(max(0.0, speeds[index + 1] ** 2 + 2.0 * config.max_deceleration * ds))
+        speeds[index] = min(speeds[index], reachable)
+
+    return [-speed if point.gear == "reverse" else speed for point, speed in zip(points, speeds)]
+
+
+def _speed_limit_at(
+    points: list[TrajectoryPoint],
+    distances: list[float],
+    index: int,
+    config: TrajectoryPlannerConfig,
+) -> float:
+    point = points[index]
+    nominal = abs(config.reverse_speed) if point.gear == "reverse" else config.forward_speed
+    floor = config.reverse_curve_speed_floor if point.gear == "reverse" else config.curve_speed_floor
+    curvature = abs(point.curvature)
+    if curvature > 1e-6:
+        nominal = min(nominal, max(floor, math.sqrt(config.lateral_acceleration_limit / curvature)))
+
+    if point.gear == "reverse":
+        distance_to_end = _distance_to_gear_end(points, distances, index)
+        if distance_to_end < config.parking_creep_distance:
+            ratio = max(0.0, distance_to_end / config.parking_creep_distance)
+            nominal = min(nominal, config.parking_creep_speed + (abs(config.reverse_speed) - config.parking_creep_speed) * ratio)
+    return nominal
+
+
+def _is_stop_point(points: list[TrajectoryPoint], index: int) -> bool:
+    return (
+        index == 0
+        or index == len(points) - 1
+        or points[index].gear != points[index - 1].gear
+        or (index < len(points) - 1 and points[index].gear != points[index + 1].gear)
+    )
+
+
+def _distance_to_gear_end(points: list[TrajectoryPoint], distances: list[float], index: int) -> float:
+    gear = points[index].gear
+    end = index
+    while end < len(points) - 1 and points[end + 1].gear == gear:
+        end += 1
+    return distances[end] - distances[index]
+
+
+def _with_speed_and_time(points: list[TrajectoryPoint], speeds: list[float]) -> list[TrajectoryPoint]:
+    updated: list[TrajectoryPoint] = []
+    t = 0.0
+    for index, (point, speed) in enumerate(zip(points, speeds)):
+        if updated:
+            previous = updated[-1]
+            ds = math.hypot(point.x - previous.x, point.y - previous.y)
+            avg_speed = (abs(previous.v) + abs(speed)) * 0.5
+            if avg_speed > 1e-3:
+                t += ds / avg_speed
+        updated.append(
+            TrajectoryPoint(
+                x=point.x,
+                y=point.y,
+                yaw=point.yaw,
+                v=speed,
+                gear=point.gear,
+                t=t,
+                s=point.s,
+                curvature=point.curvature,
+                steer=point.steer,
+                acceleration=point.acceleration,
+            )
+        )
+    return updated
+
+
+def _with_acceleration(points: list[TrajectoryPoint]) -> list[TrajectoryPoint]:
+    updated: list[TrajectoryPoint] = []
+    for index, point in enumerate(points):
+        acceleration = 0.0
+        if index < len(points) - 1:
+            dt = points[index + 1].t - point.t
+            if dt > 1e-6:
+                acceleration = (points[index + 1].v - point.v) / dt
+        updated.append(
+            TrajectoryPoint(
+                x=point.x,
+                y=point.y,
+                yaw=point.yaw,
+                v=point.v,
+                gear=point.gear,
+                t=point.t,
+                s=point.s,
+                curvature=point.curvature,
+                steer=point.steer,
                 acceleration=acceleration,
             )
         )
