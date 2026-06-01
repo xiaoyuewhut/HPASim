@@ -40,8 +40,9 @@ class TrajectoryPlannerConfig:
     forward_speed: float = 2.0
     reverse_speed: float = -1.0
     wheelbase: float = 2.8
-    smoothing_iterations: int = 3
+    smoothing_iterations: int = 5
     speed_ramp_distance: float = 4.0
+    reverse_tangent_scale: float = 1.2
 
     def __post_init__(self) -> None:
         if self.spacing <= 0.0:
@@ -56,6 +57,8 @@ class TrajectoryPlannerConfig:
             raise ValueError("smoothing_iterations must be non-negative")
         if self.speed_ramp_distance <= 0.0:
             raise ValueError("speed_ramp_distance must be positive")
+        if self.reverse_tangent_scale <= 0.0:
+            raise ValueError("reverse_tangent_scale must be positive")
 
 
 @dataclass(frozen=True)
@@ -64,9 +67,9 @@ class TrajectoryPlanner:
 
     def plan(self, route: PlannedRoute) -> Trajectory:
         samples: list[tuple[Point, str]] = []
-        for segment in route.segments:
-            smoothed_segment = _smooth_segment(segment, self.config.smoothing_iterations)
-            segment_samples = _resample_segment(smoothed_segment, self.config.spacing)
+        segments = _prepare_segments(route, self.config)
+        for segment in segments:
+            segment_samples = _resample_segment(segment, self.config.spacing)
             if samples and segment_samples and samples[-1][0] == segment_samples[0][0]:
                 samples.extend(segment_samples[1:])
             else:
@@ -88,6 +91,27 @@ class TrajectoryPlanner:
             points.append(TrajectoryPoint(point[0], point[1], yaw, v, gear, t, distances[index]))
 
         return Trajectory(tuple(_with_feedforward(points, self.config.wheelbase)))
+
+
+def _prepare_segments(route: PlannedRoute, config: TrajectoryPlannerConfig) -> tuple[PathSegment, ...]:
+    segments: list[PathSegment] = []
+    for segment in route.segments:
+        if segment.gear == "forward":
+            segments.append(_smooth_segment(segment, config.smoothing_iterations))
+            continue
+
+        if (
+            segment.gear == "reverse"
+            and segments
+            and segments[-1].gear == "forward"
+            and route.target_yaw is not None
+        ):
+            start_vehicle_yaw = _polyline_end_yaw(segments[-1].points)
+            segments.append(_curve_reverse_segment(segment, start_vehicle_yaw, route.target_yaw, config))
+            continue
+
+        segments.append(segment)
+    return tuple(segments)
 
 
 def _resample_segment(segment: PathSegment, spacing: float) -> list[tuple[Point, str]]:
@@ -120,7 +144,7 @@ def _resample_segment(segment: PathSegment, spacing: float) -> list[tuple[Point,
 def _smooth_segment(segment: PathSegment, iterations: int) -> PathSegment:
     if segment.gear == "reverse" or len(segment.points) < 3:
         return segment
-    points = list(segment.points)
+    points = _simplify_polyline(segment.points)
     for _ in range(iterations):
         next_points = [points[0]]
         for start, end in zip(points, points[1:]):
@@ -135,6 +159,86 @@ def _smooth_segment(segment: PathSegment, iterations: int) -> PathSegment:
         next_points.append(points[-1])
         points = next_points
     return PathSegment(segment.gear, tuple(points))
+
+
+def _simplify_polyline(points: tuple[Point, ...], angle_tolerance: float = math.radians(5.0)) -> list[Point]:
+    if len(points) <= 2:
+        return list(points)
+    simplified = [points[0]]
+    prev_direction: tuple[float, float] | None = None
+    for start, end in zip(points, points[1:]):
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+        length = math.hypot(dx, dy)
+        if length == 0.0:
+            continue
+        direction = (dx / length, dy / length)
+        if prev_direction is None:
+            prev_direction = direction
+            continue
+        dot = max(-1.0, min(1.0, prev_direction[0] * direction[0] + prev_direction[1] * direction[1]))
+        if math.acos(dot) > angle_tolerance:
+            simplified.append(start)
+        prev_direction = direction
+    simplified.append(points[-1])
+    return simplified
+
+
+def _curve_reverse_segment(
+    segment: PathSegment,
+    start_vehicle_yaw: float,
+    target_vehicle_yaw: float,
+    config: TrajectoryPlannerConfig,
+) -> PathSegment:
+    if len(segment.points) < 2:
+        return segment
+    start = segment.points[0]
+    end = segment.points[-1]
+    distance = math.hypot(end[0] - start[0], end[1] - start[1])
+    if distance == 0.0:
+        return segment
+
+    # While reversing, path motion is opposite to vehicle heading.
+    start_motion_yaw = normalize_angle(start_vehicle_yaw + math.pi)
+    end_motion_yaw = normalize_angle(target_vehicle_yaw + math.pi)
+    curve = _hermite_curve(start, start_motion_yaw, end, end_motion_yaw, distance, config.reverse_tangent_scale)
+    return PathSegment(segment.gear, tuple(curve))
+
+
+def _polyline_end_yaw(points: tuple[Point, ...]) -> float:
+    if len(points) < 2:
+        return 0.0
+    start = points[-2]
+    end = points[-1]
+    return math.atan2(end[1] - start[1], end[0] - start[0])
+
+
+def _hermite_curve(
+    start: Point,
+    start_yaw: float,
+    end: Point,
+    end_yaw: float,
+    distance: float,
+    tangent_scale: float,
+) -> list[Point]:
+    tangent_length = max(distance * tangent_scale, 1.0)
+    start_tangent = (math.cos(start_yaw) * tangent_length, math.sin(start_yaw) * tangent_length)
+    end_tangent = (math.cos(end_yaw) * tangent_length, math.sin(end_yaw) * tangent_length)
+    steps = max(12, int(math.ceil(distance / 0.5)))
+    points: list[Point] = []
+    for step in range(steps + 1):
+        u = step / steps
+        h00 = 2.0 * u**3 - 3.0 * u**2 + 1.0
+        h10 = u**3 - 2.0 * u**2 + u
+        h01 = -2.0 * u**3 + 3.0 * u**2
+        h11 = u**3 - u**2
+        points.append(
+            (
+                h00 * start[0] + h10 * start_tangent[0] + h01 * end[0] + h11 * end_tangent[0],
+                h00 * start[1] + h10 * start_tangent[1] + h01 * end[1] + h11 * end_tangent[1],
+            )
+        )
+    return points
 
 
 def _cumulative_distances(samples: list[tuple[Point, str]]) -> list[float]:
@@ -180,18 +284,28 @@ def _distance_to_gear_end(samples: list[tuple[Point, str]], distances: list[floa
 
 def _sample_yaw(samples: list[tuple[Point, str]], index: int, target_yaw: float | None) -> float:
     point, gear = samples[index]
-    if index < len(samples) - 1:
-        next_point = samples[index + 1][0]
+    next_index = _same_gear_neighbor(samples, index, 1)
+    prev_index = _same_gear_neighbor(samples, index, -1)
+    if next_index is not None:
+        next_point = samples[next_index][0]
         motion_yaw = math.atan2(next_point[1] - point[1], next_point[0] - point[0])
-    else:
-        prev_point = samples[index - 1][0]
+    elif prev_index is not None:
+        prev_point = samples[prev_index][0]
         motion_yaw = math.atan2(point[1] - prev_point[1], point[0] - prev_point[0])
+    else:
+        motion_yaw = target_yaw or 0.0
 
     if gear == "reverse":
-        if index == len(samples) - 1 and target_yaw is not None:
-            return normalize_angle(target_yaw)
         return normalize_angle(motion_yaw + math.pi)
     return normalize_angle(motion_yaw)
+
+
+def _same_gear_neighbor(samples: list[tuple[Point, str]], index: int, step: int) -> int | None:
+    gear = samples[index][1]
+    candidate = index + step
+    if 0 <= candidate < len(samples) and samples[candidate][1] == gear:
+        return candidate
+    return None
 
 
 def _with_feedforward(points: list[TrajectoryPoint], wheelbase: float) -> list[TrajectoryPoint]:
