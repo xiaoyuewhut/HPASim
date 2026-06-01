@@ -117,6 +117,9 @@ class ViewerHandler(SimpleHTTPRequestHandler):
                         "gear": point.gear,
                         "t": point.t,
                         "s": point.s,
+                        "steer": point.steer,
+                        "acceleration": point.acceleration,
+                        "curvature": point.curvature,
                     }
                     for point in trajectory.points
                 ],

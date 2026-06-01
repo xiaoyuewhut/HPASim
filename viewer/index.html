@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HPASim 交互式泊车可视化</title>
+  <title>HPASim 泊车可视化</title>
   <style>
     :root {
       color-scheme: dark;
@@ -13,8 +13,10 @@
       --text: #f1f0e8;
       --muted: #a7aba1;
       --accent: #52b7d8;
-      --path: #f1c75d;
+      --global: #f1c75d;
       --reverse: #de735e;
+      --local: #6bd1ff;
+      --trace: #f0f0ea;
       --danger: #d36b5f;
     }
 
@@ -31,18 +33,19 @@
 
     .app {
       display: grid;
-      grid-template-columns: 300px minmax(0, 1fr);
+      grid-template-columns: 320px minmax(0, 1fr);
       height: 100vh;
     }
 
     .sidebar {
       border-right: 1px solid var(--panel-border);
       background: var(--panel);
-      padding: 18px 16px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       min-width: 0;
+      overflow: auto;
     }
 
     .brand {
@@ -89,7 +92,13 @@
     .metric-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 10px 12px;
+    }
+
+    .micro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 12px;
     }
 
     .button-row {
@@ -164,7 +173,7 @@
       position: absolute;
       left: 16px;
       bottom: 16px;
-      max-width: min(560px, calc(100% - 32px));
+      max-width: min(640px, calc(100% - 32px));
       border: 1px solid var(--panel-border);
       border-radius: 8px;
       padding: 10px 12px;
@@ -185,8 +194,7 @@
       .sidebar {
         border-right: 0;
         border-bottom: 1px solid var(--panel-border);
-        padding: 12px;
-        gap: 10px;
+        max-height: 58vh;
       }
 
       .legend { display: none; }
@@ -214,16 +222,54 @@
           <div class="value" id="spaceCount">-</div>
         </div>
         <div>
-          <div class="label">路径点</div>
+          <div class="label">全局路径点</div>
           <div class="value" id="pathCount">-</div>
         </div>
         <div>
-          <div class="label">轨迹点</div>
+          <div class="label">局部轨迹点</div>
           <div class="value" id="trajectoryCount">-</div>
         </div>
         <div>
-          <div class="label">档位</div>
-          <div class="value" id="gearStatus">-</div>
+          <div class="label">轨迹进度</div>
+          <div class="value" id="progressStatus">-</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="label">车辆微观行为</div>
+        <div class="micro-grid">
+          <div>
+            <div class="label">档位</div>
+            <div class="value" id="gearStatus">-</div>
+          </div>
+          <div>
+            <div class="label">速度</div>
+            <div class="value" id="speedStatus">-</div>
+          </div>
+          <div>
+            <div class="label">前轮转角</div>
+            <div class="value" id="steerStatus">-</div>
+          </div>
+          <div>
+            <div class="label">加速度</div>
+            <div class="value" id="accelStatus">-</div>
+          </div>
+          <div>
+            <div class="label">航向角</div>
+            <div class="value" id="yawStatus">-</div>
+          </div>
+          <div>
+            <div class="label">曲率</div>
+            <div class="value" id="curvatureStatus">-</div>
+          </div>
+          <div>
+            <div class="label">里程</div>
+            <div class="value" id="distanceStatus">-</div>
+          </div>
+          <div>
+            <div class="label">时间</div>
+            <div class="value" id="timeStatus">-</div>
+          </div>
         </div>
       </section>
 
@@ -241,15 +287,16 @@
         <div class="legend-row"><span class="swatch" style="background:#d7d2c5"></span>空车位</div>
         <div class="legend-row"><span class="swatch" style="background:#52b7d8"></span>选中车位</div>
         <div class="legend-row"><span class="swatch" style="background:#777b73"></span>车辆/障碍</div>
-        <div class="legend-row"><span class="swatch" style="background:#f1c75d"></span>前进路径</div>
-        <div class="legend-row"><span class="swatch" style="background:#de735e"></span>倒车段</div>
-        <div class="legend-row"><span class="swatch" style="background:#f0f0ea"></span>仿真车辆</div>
+        <div class="legend-row"><span class="swatch" style="background:#f1c75d"></span>全局前进路径</div>
+        <div class="legend-row"><span class="swatch" style="background:#de735e"></span>全局倒车段</div>
+        <div class="legend-row"><span class="swatch" style="background:#6bd1ff"></span>局部轨迹窗口</div>
+        <div class="legend-row"><span class="swatch" style="background:#f0f0ea"></span>已行驶轨迹/车辆</div>
       </section>
     </aside>
 
     <section class="canvas-wrap">
       <canvas id="mapCanvas"></canvas>
-      <div class="toast" id="toast">点击车位生成全局路径，再点击“开始行驶”播放车辆运动。</div>
+      <div class="toast" id="toast">黄色/红色为全局路径，蓝色为车辆前方局部轨迹窗口，白色为已行驶轨迹。</div>
     </section>
   </main>
 
@@ -261,7 +308,15 @@
     const spaceCount = document.getElementById("spaceCount");
     const pathCount = document.getElementById("pathCount");
     const trajectoryCount = document.getElementById("trajectoryCount");
+    const progressStatus = document.getElementById("progressStatus");
     const gearStatus = document.getElementById("gearStatus");
+    const speedStatus = document.getElementById("speedStatus");
+    const steerStatus = document.getElementById("steerStatus");
+    const accelStatus = document.getElementById("accelStatus");
+    const yawStatus = document.getElementById("yawStatus");
+    const curvatureStatus = document.getElementById("curvatureStatus");
+    const distanceStatus = document.getElementById("distanceStatus");
+    const timeStatus = document.getElementById("timeStatus");
     const startDriveButton = document.getElementById("startDrive");
     const pauseDriveButton = document.getElementById("pauseDrive");
     const resetDriveButton = document.getElementById("resetDrive");
@@ -303,10 +358,12 @@
       walkway: "#bdb8a4",
       selectedStroke: "#ffffff",
       hoverStroke: "#f1c75d",
-      path: "#f1c75d",
+      globalPath: "#f1c75d",
       reversePath: "#de735e",
+      localPath: "#6bd1ff",
+      trace: "#f0f0ea",
       ego: "#f0f0ea",
-      egoRear: "#52b7d8",
+      egoNose: "#52b7d8",
     };
 
     function resizeCanvas() {
@@ -353,8 +410,9 @@
       if (!state.map) return;
       drawRoads();
       drawObjects();
-      drawRoute();
-      drawTrajectoryTrace();
+      drawGlobalPath();
+      drawLocalTrajectory();
+      drawDrivenTrace();
       drawEgo();
     }
 
@@ -418,19 +476,31 @@
       ctx.stroke();
     }
 
-    function drawRoute() {
+    function drawGlobalPath() {
       if (state.segments.length) {
         for (const segment of state.segments) {
-          drawPath(segment.points, segment.gear === "reverse" ? colors.reversePath : colors.path, segment.gear === "reverse", 4);
+          drawPath(
+            segment.points,
+            segment.gear === "reverse" ? colors.reversePath : colors.globalPath,
+            segment.gear === "reverse",
+            4,
+          );
         }
         return;
       }
-      drawPath(state.path, colors.path, false, 4);
+      drawPath(state.path, colors.globalPath, false, 4);
     }
 
-    function drawTrajectoryTrace() {
+    function drawLocalTrajectory() {
       if (state.trajectory.length < 2) return;
-      drawPath(state.trajectory.slice(0, state.animationIndex + 1), "#f0f0ea", false, 2);
+      const start = state.animationIndex;
+      const end = Math.min(state.trajectory.length, start + 28);
+      drawPath(state.trajectory.slice(start, end), colors.localPath, false, 3);
+    }
+
+    function drawDrivenTrace() {
+      if (state.trajectory.length < 2) return;
+      drawPath(state.trajectory.slice(0, state.animationIndex + 1), colors.trace, false, 2);
     }
 
     function drawPath(points, color, dashed, lineWidth) {
@@ -471,7 +541,7 @@
       ctx.lineTo(length * 0.22, -width * 0.28);
       ctx.lineTo(length * 0.22, width * 0.28);
       ctx.closePath();
-      ctx.fillStyle = colors.egoRear;
+      ctx.fillStyle = colors.egoNose;
       ctx.fill();
       ctx.restore();
     }
@@ -511,7 +581,8 @@
       state.animationIndex = 0;
       pathCount.textContent = "-";
       trajectoryCount.textContent = "-";
-      gearStatus.textContent = "-";
+      progressStatus.textContent = "-";
+      resetMicroStatus();
       startDriveButton.disabled = true;
       pauseDriveButton.disabled = true;
       resetDriveButton.disabled = true;
@@ -539,7 +610,7 @@
 
     async function loadDriveTrajectory() {
       if (!state.selected) return;
-      planStatus.textContent = "生成轨迹中...";
+      planStatus.textContent = "生成局部轨迹中...";
       startDriveButton.disabled = true;
       try {
         const payload = await postJson("/api/drive", {
@@ -551,7 +622,8 @@
         state.vehicle = state.trajectory[0] || null;
         trajectoryCount.textContent = String(state.trajectory.length);
         resetDriveButton.disabled = false;
-        planStatus.textContent = "轨迹已生成，开始行驶";
+        updateMicroStatus();
+        planStatus.textContent = "局部轨迹已生成，开始行驶";
       } catch (error) {
         planStatus.textContent = error.message;
         planStatus.classList.add("error");
@@ -560,9 +632,7 @@
 
     async function startDrive() {
       if (!state.selected) return;
-      if (!state.trajectory.length) {
-        await loadDriveTrajectory();
-      }
+      if (!state.trajectory.length) await loadDriveTrajectory();
       if (!state.trajectory.length) return;
       startDriveButton.disabled = true;
       pauseDriveButton.disabled = false;
@@ -581,7 +651,7 @@
         }
         state.animationIndex += 1;
         state.vehicle = state.trajectory[state.animationIndex];
-        gearStatus.textContent = state.vehicle.gear === "reverse" ? "倒车" : "前进";
+        updateMicroStatus();
         draw();
       }, 45);
     }
@@ -597,11 +667,46 @@
       stopAnimation();
       state.animationIndex = 0;
       state.vehicle = state.trajectory[0] || null;
-      gearStatus.textContent = state.vehicle ? (state.vehicle.gear === "reverse" ? "倒车" : "前进") : "-";
       startDriveButton.disabled = !state.selected;
       pauseDriveButton.disabled = true;
       planStatus.textContent = state.selected ? "车辆已重置" : "点击车位生成全局路径";
+      updateMicroStatus();
       draw();
+    }
+
+    function updateMicroStatus() {
+      const vehicle = state.vehicle;
+      if (!vehicle) {
+        resetMicroStatus();
+        return;
+      }
+      const index = state.animationIndex + 1;
+      const total = Math.max(state.trajectory.length, 1);
+      progressStatus.textContent = `${index}/${total}`;
+      gearStatus.textContent = vehicle.gear === "reverse" ? "倒车" : "前进";
+      speedStatus.textContent = `${vehicle.v.toFixed(2)} m/s`;
+      steerStatus.textContent = `${toDeg(vehicle.steer || 0).toFixed(1)} deg`;
+      accelStatus.textContent = `${(vehicle.acceleration || 0).toFixed(2)} m/s²`;
+      yawStatus.textContent = `${toDeg(vehicle.yaw || 0).toFixed(1)} deg`;
+      curvatureStatus.textContent = `${(vehicle.curvature || 0).toFixed(3)} 1/m`;
+      distanceStatus.textContent = `${(vehicle.s || 0).toFixed(1)} m`;
+      timeStatus.textContent = `${(vehicle.t || 0).toFixed(1)} s`;
+    }
+
+    function resetMicroStatus() {
+      progressStatus.textContent = "-";
+      gearStatus.textContent = "-";
+      speedStatus.textContent = "-";
+      steerStatus.textContent = "-";
+      accelStatus.textContent = "-";
+      yawStatus.textContent = "-";
+      curvatureStatus.textContent = "-";
+      distanceStatus.textContent = "-";
+      timeStatus.textContent = "-";
+    }
+
+    function toDeg(radians) {
+      return radians * 180 / Math.PI;
     }
 
     async function postJson(url, body) {

@@ -28,6 +28,9 @@ class ViewerApiTest(unittest.TestCase):
         first = payload["points"][0]
         self.assertIn("yaw", first)
         self.assertIn("gear", first)
+        self.assertIn("steer", first)
+        self.assertIn("acceleration", first)
+        self.assertIn("curvature", first)
         json.dumps(payload)
 
 
