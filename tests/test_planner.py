@@ -41,6 +41,47 @@ class GridRoutePlannerTest(unittest.TestCase):
         self.assertAlmostEqual(route.points[-1][0], target.center[0], delta=0.1)
         self.assertAlmostEqual(route.points[-1][1], target.center[1], delta=0.1)
 
+    def test_forward_route_does_not_cut_through_parking_spaces(self) -> None:
+        opendrive_map = load_opendrive_map(MAP_PATH)
+        planner = GridRoutePlanner(opendrive_map, GridPlannerConfig(resolution=1.0, obstacle_padding=0.2))
+
+        route = planner.plan_route_to_object((8.0, -1.7), "central_upper_angled_row_17")
+        parking_polygons = tuple(obj.polygon for obj in opendrive_map.objects if obj.object_type == "parkingSpace")
+
+        for point in _sample_polyline(route.segments[0].points, step=0.25):
+            self.assertFalse(
+                any(_point_in_polygon(point, polygon) for polygon in parking_polygons),
+                f"forward route cuts through a parking space at {point}",
+            )
+
+
+def _sample_polyline(points: tuple[tuple[float, float], ...], step: float) -> list[tuple[float, float]]:
+    samples = [points[0]]
+    for start, end in zip(points, points[1:]):
+        distance = ((end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2) ** 0.5
+        count = max(1, int(distance / step))
+        samples.extend(
+            (
+                start[0] + (end[0] - start[0]) * index / count,
+                start[1] + (end[1] - start[1]) * index / count,
+            )
+            for index in range(1, count + 1)
+        )
+    return samples
+
+
+def _point_in_polygon(point: tuple[float, float], polygon: tuple[tuple[float, float], ...]) -> bool:
+    x, y = point
+    inside = False
+    j = len(polygon) - 1
+    for i, pi in enumerate(polygon):
+        xi, yi = pi
+        xj, yj = polygon[j]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+            inside = not inside
+        j = i
+    return inside
+
 
 if __name__ == "__main__":
     unittest.main()

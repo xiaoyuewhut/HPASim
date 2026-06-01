@@ -356,7 +356,7 @@ def _object_polygon(frame: RoadFrame, obj: ET.Element) -> list[Point]:
 
 def _point_blocked_by_objects(point: Point, objects: tuple[MapObject, ...], padding: float) -> bool:
     for obj in objects:
-        if obj.object_type in {"parkingSpace", "pedestrianWalkway", "gate", "ramp"}:
+        if obj.object_type in {"pedestrianWalkway", "gate", "ramp"}:
             continue
         if _point_near_polygon(point, obj.polygon, padding):
             return True
