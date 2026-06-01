@@ -80,6 +80,7 @@ class GridPlannerConfig:
     obstacle_padding: float = 0.4
     right_lane_weight: float = 0.7
     reverse_staging_distance: float = 4.5
+    reverse_heading_tolerance: float = math.radians(45.0)
 
     def __post_init__(self) -> None:
         if self.resolution <= 0.0:
@@ -90,6 +91,8 @@ class GridPlannerConfig:
             raise ValueError("right_lane_weight must be non-negative")
         if self.reverse_staging_distance <= 0.0:
             raise ValueError("reverse_staging_distance must be positive")
+        if self.reverse_heading_tolerance <= 0.0:
+            raise ValueError("reverse_heading_tolerance must be positive")
 
 
 @dataclass(frozen=True)
@@ -145,13 +148,14 @@ class GridRoutePlanner:
         target_yaw = _head_out_yaw(target, self.opendrive_map.road_polygons)
         staging = _reverse_staging_point(target, target_yaw, self.config.reverse_staging_distance)
         forward_points = self.plan(start, staging)
-        reverse_points = _line_points(forward_points[-1], target.center, self.config.resolution)
+        terminal_gear = _parking_terminal_gear(forward_points, target.center, self.config)
+        terminal_points = _line_points(forward_points[-1], target.center, self.config.resolution)
         return PlannedRoute(
             target=target,
             target_yaw=target_yaw,
             segments=(
                 PathSegment("forward", tuple(forward_points)),
-                PathSegment("reverse", tuple(reverse_points)),
+                PathSegment(terminal_gear, tuple(terminal_points)),
             ),
         )
 
@@ -437,6 +441,27 @@ def _reverse_staging_point(target: MapObject, target_yaw: float, distance: float
         target.center[0] + math.cos(target_yaw) * distance,
         target.center[1] + math.sin(target_yaw) * distance,
     )
+
+
+def _parking_terminal_gear(forward_points: list[Point], target_center: Point, config: GridPlannerConfig) -> str:
+    if len(forward_points) < 2:
+        return "forward"
+    forward_yaw = math.atan2(
+        forward_points[-1][1] - forward_points[-2][1],
+        forward_points[-1][0] - forward_points[-2][0],
+    )
+    parking_motion_yaw = math.atan2(
+        target_center[1] - forward_points[-1][1],
+        target_center[0] - forward_points[-1][0],
+    )
+    required_reverse_body_yaw = _normalize_angle(parking_motion_yaw + math.pi)
+    if abs(_normalize_angle(required_reverse_body_yaw - forward_yaw)) <= config.reverse_heading_tolerance:
+        return "reverse"
+    return "forward"
+
+
+def _normalize_angle(angle: float) -> float:
+    return (angle + math.pi) % (2.0 * math.pi) - math.pi
 
 
 def _line_points(start: Point, end: Point, resolution: float) -> list[Point]:

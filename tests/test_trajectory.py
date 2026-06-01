@@ -2,13 +2,13 @@ import unittest
 import math
 
 from hpasim.map_payload import load_default_map
-from hpasim.planner import GridPlannerConfig, GridRoutePlanner
+from hpasim.planner import GridPlannerConfig, GridRoutePlanner, PathSegment, PlannedRoute
 from hpasim.trajectory import TrajectoryPlanner, TrajectoryPlannerConfig
 from hpasim.vehicle import normalize_angle
 
 
 class TrajectoryPlannerTest(unittest.TestCase):
-    def test_generates_forward_and_reverse_reference_points(self) -> None:
+    def test_generates_forward_reference_points_without_fake_reverse(self) -> None:
         opendrive_map = load_default_map()
         route = GridRoutePlanner(
             opendrive_map,
@@ -19,18 +19,14 @@ class TrajectoryPlannerTest(unittest.TestCase):
 
         self.assertGreater(len(trajectory), 20)
         gears = {point.gear for point in trajectory.points}
-        self.assertEqual(gears, {"forward", "reverse"})
+        self.assertEqual(gears, {"forward"})
         self.assertTrue(any(point.v > 0.0 for point in trajectory.points))
-        self.assertTrue(any(point.v < 0.0 for point in trajectory.points))
+        self.assertFalse(any(point.v < 0.0 for point in trajectory.points))
         self.assertAlmostEqual(trajectory.points[0].t, 0.0)
         self.assertGreater(trajectory.points[-1].t, trajectory.points[0].t)
 
     def test_reverse_segment_has_real_backward_motion(self) -> None:
-        opendrive_map = load_default_map()
-        route = GridRoutePlanner(
-            opendrive_map,
-            GridPlannerConfig(resolution=1.0, obstacle_padding=0.2),
-        ).plan_route_to_object((8.0, -1.7), "central_upper_angled_row_13")
+        route = _reverse_capable_route()
 
         trajectory = TrajectoryPlanner(TrajectoryPlannerConfig(spacing=0.5)).plan(route)
         first_reverse = next(index for index, point in enumerate(trajectory.points) if point.gear == "reverse")
@@ -49,11 +45,7 @@ class TrajectoryPlannerTest(unittest.TestCase):
         self.assertAlmostEqual(trajectory.points[-1].yaw, route.target_yaw, delta=math.radians(5.0))
 
     def test_local_trajectory_smooths_global_route_near_parking_space(self) -> None:
-        opendrive_map = load_default_map()
-        route = GridRoutePlanner(
-            opendrive_map,
-            GridPlannerConfig(resolution=1.0, obstacle_padding=0.2),
-        ).plan_route_to_object((8.0, -1.7), "central_upper_angled_row_13")
+        route = _reverse_capable_route()
 
         trajectory = TrajectoryPlanner(TrajectoryPlannerConfig(spacing=0.5)).plan(route)
         raw_reverse = route.segments[-1].points
@@ -66,11 +58,7 @@ class TrajectoryPlannerTest(unittest.TestCase):
         self.assertGreater(max(reverse_deviation), 0.15)
 
     def test_speed_profile_respects_acceleration_and_parking_creep(self) -> None:
-        opendrive_map = load_default_map()
-        route = GridRoutePlanner(
-            opendrive_map,
-            GridPlannerConfig(resolution=1.0, obstacle_padding=0.2),
-        ).plan_route_to_object((8.0, -1.7), "central_upper_angled_row_13")
+        route = _reverse_capable_route()
         config = TrajectoryPlannerConfig(
             spacing=0.5,
             max_acceleration=0.8,
@@ -137,6 +125,26 @@ def _distance_to_segment(point: tuple[float, float], start: tuple[float, float],
     t = max(0.0, min(1.0, ((px - sx) * dx + (py - sy) * dy) / length_sq))
     projection = (sx + t * dx, sy + t * dy)
     return math.hypot(px - projection[0], py - projection[1])
+
+
+def _reverse_capable_route() -> PlannedRoute:
+    opendrive_map = load_default_map()
+    target = opendrive_map.find_object("central_upper_angled_row_13")
+    target_yaw = -2.094394653988529
+    start = (
+        target.center[0] + math.cos(target_yaw) * 4.5,
+        target.center[1] + math.sin(target_yaw) * 4.5,
+    )
+    forward_yaw = target_yaw + math.radians(20.0)
+    forward_start = (start[0] - math.cos(forward_yaw) * 3.0, start[1] - math.sin(forward_yaw) * 3.0)
+    return PlannedRoute(
+        target=target,
+        target_yaw=target_yaw,
+        segments=(
+            PathSegment("forward", (forward_start, start)),
+            PathSegment("reverse", (start, target.center)),
+        ),
+    )
 
 
 if __name__ == "__main__":
